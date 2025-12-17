@@ -1,0 +1,488 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import { supabase } from "../../lib/supabase";
+
+// Get token from URL
+const { token } = Astro.params;
+
+if (!token) {
+    return Astro.redirect("/");
+}
+
+// Fetch booking by token
+let booking: any = null;
+let messages: any[] = [];
+let error = null;
+
+try {
+    const { data: bookingData, error: bookingError } = await supabase
+        .from("bookings")
+        .select("*")
+        .eq("client_access_token", token)
+        .single();
+
+    if (bookingError || !bookingData) {
+        return new Response(null, {
+            status: 404,
+            statusText: "Not Found",
+        });
+    }
+
+    booking = bookingData;
+
+    // Fetch messages for this booking
+    const { data: messagesData } = await supabase
+        .from("messages")
+        .select("*")
+        .eq("booking_id", booking.id)
+        .order("created_at", { ascending: true });
+
+    messages = messagesData || [];
+} catch (e) {
+    console.error("Error fetching booking:", e);
+    error = e;
+}
+
+// Format date helper
+function formatDate(dateString: string) {
+    return new Date(dateString).toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+    });
+}
+
+function formatMessageTime(dateString: string) {
+    return new Date(dateString).toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+    });
+}
+
+function getStatusInfo(status: string) {
+    switch (status) {
+        case "pending":
+            return {
+                color: "bg-yellow-100 text-yellow-800 border-yellow-300",
+                icon: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z",
+                message: "Your booking request is being reviewed. We'll get back to you soon!",
+            };
+        case "accepted":
+            return {
+                color: "bg-green-100 text-green-800 border-green-300",
+                icon: "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z",
+                message: "Great news! Your booking has been accepted. Check the details below.",
+            };
+        case "denied":
+            return {
+                color: "bg-red-100 text-red-800 border-red-300",
+                icon: "M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z",
+                message: "Unfortunately, we couldn't accept this booking request. Please see the notes below or contact us for more information.",
+            };
+        default:
+            return {
+                color: "bg-gray-100 text-gray-800 border-gray-300",
+                icon: "M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
+                message: "",
+            };
+    }
+}
+
+const statusInfo = booking ? getStatusInfo(booking.status) : null;
+---
+
+<Layout title="My Booking | KowTattys">
+    <div class="container mx-auto px-4 py-12 max-w-4xl">
+        {error ? (
+            <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-8 text-center">
+                <svg class="w-16 h-16 mx-auto text-red-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <h2 class="text-2xl font-bold text-red-600 dark:text-red-400 mb-2">
+                    Error Loading Booking
+                </h2>
+                <p class="text-gray-600 dark:text-gray-400">
+                    There was an error loading your booking. Please try again later.
+                </p>
+                <a href="/" class="inline-block mt-6 text-purple-600 hover:underline">
+                    ← Return to Homepage
+                </a>
+            </div>
+        ) : !booking ? (
+            <div class="bg-gray-50 dark:bg-gray-800 rounded-xl p-8 text-center">
+                <svg class="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                    Booking Not Found
+                </h2>
+                <p class="text-gray-600 dark:text-gray-400">
+                    We couldn't find a booking with this link. Please check the URL or contact us for assistance.
+                </p>
+                <a href="/" class="inline-block mt-6 text-purple-600 hover:underline">
+                    ← Return to Homepage
+                </a>
+            </div>
+        ) : (
+            <div class="space-y-6">
+                <!-- Header -->
+                <div class="text-center mb-8">
+                    <h1 class="text-4xl font-bold font-doto mb-2">My Booking</h1>
+                    <p class="text-muted-foreground">
+                        Track your booking status and communicate with our team
+                    </p>
+                </div>
+
+                <!-- Status Banner -->
+                <div class={`rounded-xl p-6 border ${statusInfo?.color}`}>
+                    <div class="flex items-start gap-4">
+                        <div class="flex-shrink-0">
+                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d={statusInfo?.icon} />
+                            </svg>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-bold capitalize mb-1">
+                                Status: {booking.status}
+                            </h2>
+                            <p class="opacity-80">
+                                {statusInfo?.message}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Booking Details -->
+                    <div class="lg:col-span-2 space-y-6">
+                        <!-- Main Details Card -->
+                        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                                Booking Details
+                            </h3>
+                            <dl class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                        Submitted
+                                    </dt>
+                                    <dd class="mt-1 text-gray-900 dark:text-white">
+                                        {formatDate(booking.created_at)}
+                                    </dd>
+                                </div>
+                                <div>
+                                    <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                        Type
+                                    </dt>
+                                    <dd class="mt-1 text-gray-900 dark:text-white">
+                                        {booking.is_custom ? "Custom Design" : "Flash Design"}
+                                    </dd>
+                                </div>
+                                <div>
+                                    <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                        Size
+                                    </dt>
+                                    <dd class="mt-1 text-gray-900 dark:text-white">
+                                        {booking.tattoo_size}
+                                    </dd>
+                                </div>
+                                <div>
+                                    <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                        Placement
+                                    </dt>
+                                    <dd class="mt-1 text-gray-900 dark:text-white">
+                                        {booking.tattoo_placement}
+                                    </dd>
+                                </div>
+                                {booking.agreed_price && (
+                                    <div>
+                                        <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                            Agreed Price
+                                        </dt>
+                                        <dd class="mt-1 text-gray-900 dark:text-white font-semibold text-green-600">
+                                            ${booking.agreed_price}
+                                        </dd>
+                                    </div>
+                                )}
+                                {booking.scheduled_date && (
+                                    <div>
+                                        <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                            Scheduled Date
+                                        </dt>
+                                        <dd class="mt-1 text-gray-900 dark:text-white font-semibold">
+                                            {formatDate(booking.scheduled_date)}
+                                        </dd>
+                                    </div>
+                                )}
+                            </dl>
+                        </div>
+
+                        <!-- Tattoo Idea -->
+                        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                                Your Tattoo Idea
+                            </h3>
+                            <p class="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                                {booking.tattoo_idea}
+                            </p>
+                        </div>
+
+                        <!-- Reference Photos -->
+                        {booking.reference_photos && booking.reference_photos.length > 0 && (
+                            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                                    Your Reference Photos
+                                </h3>
+                                <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                    {booking.reference_photos.map((photo: string, index: number) => (
+                                        <a
+                                            href={photo}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            class="block aspect-square rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 hover:opacity-80 transition-opacity"
+                                        >
+                                            <img
+                                                src={photo}
+                                                alt={`Reference ${index + 1}`}
+                                                class="w-full h-full object-cover"
+                                            />
+                                        </a>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        <!-- Admin Notes (if any) -->
+                        {booking.admin_notes && (
+                            <div class="bg-purple-50 dark:bg-purple-900/20 rounded-xl border border-purple-200 dark:border-purple-800 p-6">
+                                <h3 class="text-lg font-semibold text-purple-900 dark:text-purple-100 mb-4 flex items-center gap-2">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                                    </svg>
+                                    Note from Artist
+                                </h3>
+                                <p class="text-purple-800 dark:text-purple-200 whitespace-pre-wrap">
+                                    {booking.admin_notes}
+                                </p>
+                            </div>
+                        )}
+                    </div>
+
+                    <!-- Chat Sidebar -->
+                    <div class="lg:col-span-1">
+                        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden sticky top-24">
+                            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
+                                <h3 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                    </svg>
+                                    Chat with Artist
+                                </h3>
+                            </div>
+
+                            <!-- Messages -->
+                            <div
+                                id="messages-container"
+                                class="h-80 overflow-y-auto p-4 space-y-4"
+                            >
+                                {messages.length === 0 ? (
+                                    <div class="text-center py-8">
+                                        <svg class="w-12 h-12 mx-auto text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                        </svg>
+                                        <p class="text-gray-500 dark:text-gray-400 text-sm">
+                                            No messages yet
+                                        </p>
+                                        <p class="text-gray-400 dark:text-gray-500 text-xs mt-1">
+                                            Send a message to start the conversation
+                                        </p>
+                                    </div>
+                                ) : (
+                                    messages.map((msg) => (
+                                        <div class={`flex ${msg.sender_role === "client" ? "justify-end" : "justify-start"}`}>
+                                            <div
+                                                class={`max-w-[85%] rounded-lg px-4 py-2 ${
+                                                    msg.sender_role === "client"
+                                                        ? "bg-purple-600 text-white"
+                                                        : "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white"
+                                                }`}
+                                            >
+                                                <p class="text-sm">{msg.content}</p>
+                                                <p
+                                                    class={`text-xs mt-1 ${
+                                                        msg.sender_role === "client"
+                                                            ? "text-purple-200"
+                                                            : "text-gray-500 dark:text-gray-400"
+                                                    }`}
+                                                >
+                                                    {formatMessageTime(msg.created_at)}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+
+                            <!-- Message Input -->
+                            <div class="p-4 border-t border-gray-200 dark:border-gray-700">
+                                <form id="message-form" class="flex gap-2">
+                                    <input
+                                        type="text"
+                                        id="message-input"
+                                        placeholder="Type a message..."
+                                        class="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                                    />
+                                    <button
+                                        type="submit"
+                                        class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                                    >
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                                        </svg>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Back to Home -->
+                <div class="text-center mt-8">
+                    <a href="/" class="text-purple-600 hover:underline">
+                        ← Back to Homepage
+                    </a>
+                </div>
+            </div>
+        )}
+    </div>
+</Layout>
+
+<script define:vars={{ bookingId: booking?.id }}>
+    window.bookingId = bookingId;
+</script>
+
+<script>
+    import { supabase } from "../../lib/supabase";
+
+    const bookingId = (window as any).bookingId;
+
+    if (!bookingId) {
+        console.error("No booking ID found");
+    }
+
+    const messageForm = document.getElementById("message-form") as HTMLFormElement;
+    const messageInput = document.getElementById("message-input") as HTMLInputElement;
+    const messagesContainer = document.getElementById("messages-container");
+
+    function formatMessageTime(date: Date) {
+        return date.toLocaleTimeString("en-US", {
+            hour: "numeric",
+            minute: "2-digit",
+        });
+    }
+
+    function addMessageToUI(message: { content: string; sender_role: string; created_at: string }) {
+        if (!messagesContainer) return;
+
+        // Remove "no messages" placeholder if exists
+        const placeholder = messagesContainer.querySelector(".text-center.py-8");
+        if (placeholder) {
+            placeholder.remove();
+        }
+
+        const messageDiv = document.createElement("div");
+        messageDiv.className = `flex ${message.sender_role === "client" ? "justify-end" : "justify-start"}`;
+
+        const bubbleClass = message.sender_role === "client"
+            ? "bg-purple-600 text-white"
+            : "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white";
+
+        const timeClass = message.sender_role === "client"
+            ? "text-purple-200"
+            : "text-gray-500 dark:text-gray-400";
+
+        messageDiv.innerHTML = `
+            <div class="max-w-[85%] rounded-lg px-4 py-2 ${bubbleClass}">
+                <p class="text-sm">${message.content}</p>
+                <p class="text-xs mt-1 ${timeClass}">${formatMessageTime(new Date(message.created_at))}</p>
+            </div>
+        `;
+
+        messagesContainer.appendChild(messageDiv);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    messageForm?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const content = messageInput?.value.trim();
+        if (!content || !bookingId) return;
+
+        try {
+            const { data, error } = await supabase
+                .from("messages")
+                .insert({
+                    booking_id: bookingId,
+                    sender_role: "client",
+                    content,
+                })
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            messageInput.value = "";
+            addMessageToUI(data);
+        } catch (err) {
+            console.error("Error sending message:", err);
+            alert("Failed to send message. Please try again.");
+        }
+    });
+
+    // Subscribe to realtime messages
+    if (bookingId) {
+        const channel = supabase
+            .channel(`messages:${bookingId}`)
+            .on(
+                "postgres_changes",
+                {
+                    event: "INSERT",
+                    schema: "public",
+                    table: "messages",
+                    filter: `booking_id=eq.${bookingId}`,
+                },
+                (payload) => {
+                    const message = payload.new as any;
+                    // Only add if it's from the admin (client messages are added immediately)
+                    if (message.sender_role === "admin") {
+                        addMessageToUI(message);
+                    }
+                }
+            )
+            .subscribe();
+    }
+
+    // Scroll to bottom of messages on load
+    if (messagesContainer) {
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+</script>
+
+<style>
+    #messages-container {
+        scrollbar-width: thin;
+        scrollbar-color: hsl(var(--muted)) transparent;
+    }
+
+    #messages-container::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    #messages-container::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    #messages-container::-webkit-scrollbar-thumb {
+        background-color: hsl(var(--muted));
+        border-radius: 3px;
+    }
+</style>

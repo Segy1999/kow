@@ -1,0 +1,1051 @@
+---
+// BookingModal.astro - Global booking modal component
+---
+
+<dialog id="booking-modal" class="booking-modal">
+    <div class="booking-modal-content">
+        <!-- Close Button -->
+        <button
+            id="booking-modal-close"
+            class="booking-modal-close"
+            aria-label="Close booking modal"
+        >
+            <svg
+                class="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+            >
+                <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        </button>
+
+        <!-- Initial Choice Step -->
+        <div id="booking-choice" class="booking-choice">
+            <h2 class="text-2xl font-bold mb-2 font-doto">Book Your Tattoo</h2>
+            <p class="text-muted-foreground text-sm mb-6">
+                Choose an option to get started
+            </p>
+
+            <div class="choice-grid">
+                <button id="choice-custom" class="choice-card">
+                    <h3 class="text-lg font-semibold mb-2">
+                        Request a Custom Tattoo
+                    </h3>
+                    <p class="text-sm text-muted-foreground">
+                        Work with our artists to create a unique design
+                    </p>
+                </button>
+
+                <button id="choice-flash" class="choice-card">
+                    <h3 class="text-lg font-semibold mb-2">
+                        Shop Flash Designs
+                    </h3>
+                    <p class="text-sm text-muted-foreground">
+                        Browse our collection of ready-to-ink designs
+                    </p>
+                </button>
+            </div>
+        </div>
+
+        <!-- Custom Tattoo Form (Hidden Initially) -->
+        <div id="booking-form-container" class="hidden">
+            <!-- Progress Indicator -->
+            <div class="booking-progress">
+                <div class="progress-step active" data-progress="1">1</div>
+                <div class="progress-line"></div>
+                <div class="progress-step" data-progress="2">2</div>
+                <div class="progress-line"></div>
+                <div class="progress-step" data-progress="3">3</div>
+                <div class="progress-line"></div>
+                <div class="progress-step" data-progress="4">4</div>
+            </div>
+
+            <h2 class="text-2xl font-bold mb-6 text-center font-doto">
+                Booking Request
+            </h2>
+
+            <form id="booking-form" class="booking-form">
+                <!-- Step 1: Idea -->
+                <div class="form-step active" data-step="1">
+                    <h3 class="text-xl mb-4 font-doto">
+                        What's your tattoo idea?
+                    </h3>
+                    <p class="text-muted-foreground text-sm mb-4">
+                        Tell us about your vision. Be as detailed as you'd like!
+                    </p>
+                    <textarea
+                        name="idea"
+                        class="w-full p-4 border rounded-md bg-background text-foreground resize-none"
+                        rows="5"
+                        placeholder="Describe your dream tattoo..."
+                        required></textarea>
+                    <div class="flex justify-between mt-6">
+                        <button
+                            type="button"
+                            class="btn-back-to-choice border border-foreground/20 px-6 py-2 rounded hover:bg-muted transition-colors"
+                        >
+                            <svg
+                                class="inline-block w-4 h-4 mr-1"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M15 19l-7-7 7-7"></path>
+                            </svg>
+                            Back
+                        </button>
+                        <button
+                            type="button"
+                            class="btn-next bg-primary text-primary-foreground px-6 py-2 rounded hover:opacity-90 transition-opacity"
+                        >
+                            Next
+                            <svg
+                                class="inline-block w-4 h-4 ml-1"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M9 5l7 7-7 7"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 2: Placement & Size -->
+                <div class="form-step" data-step="2">
+                    <h3 class="text-xl mb-4 font-doto">Placement & Size</h3>
+                    <p class="text-muted-foreground text-sm mb-4">
+                        Where would you like your tattoo and how big?
+                    </p>
+                    <div class="grid gap-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2"
+                                >Placement</label
+                            >
+                            <input
+                                type="text"
+                                name="placement"
+                                placeholder="e.g., Forearm, Shoulder, Back"
+                                class="w-full p-3 border rounded bg-background text-foreground"
+                                required
+                            />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2"
+                                >Size</label
+                            >
+                            <select
+                                name="size"
+                                class="w-full p-3 border rounded bg-background text-foreground"
+                                required
+                            >
+                                <option value="">Select Size</option>
+                                <option value="1-2 inches"
+                                    >1-2 inches (Small)</option
+                                >
+                                <option value="3-5 inches"
+                                    >3-5 inches (Medium)</option
+                                >
+                                <option value="6+ inches"
+                                    >6+ inches (Large)</option
+                                >
+                            </select>
+                        </div>
+                    </div>
+                    <div class="flex justify-between mt-6">
+                        <button
+                            type="button"
+                            class="btn-prev border border-foreground/20 px-6 py-2 rounded hover:bg-muted transition-colors"
+                        >
+                            <svg
+                                class="inline-block w-4 h-4 mr-1"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M15 19l-7-7 7-7"></path>
+                            </svg>
+                            Back
+                        </button>
+                        <button
+                            type="button"
+                            class="btn-next bg-primary text-primary-foreground px-6 py-2 rounded hover:opacity-90 transition-opacity"
+                        >
+                            Next
+                            <svg
+                                class="inline-block w-4 h-4 ml-1"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M9 5l7 7-7 7"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 3: Reference Photos -->
+                <div class="form-step" data-step="3">
+                    <h3 class="text-xl mb-4 font-doto">Reference Photos</h3>
+                    <p class="text-muted-foreground text-sm mb-4">
+                        Upload any inspiration images (optional but helpful!)
+                    </p>
+                    <div class="upload-area">
+                        <input
+                            type="file"
+                            id="ref-photos"
+                            multiple
+                            accept="image/*"
+                            class="hidden"
+                        />
+                        <label for="ref-photos" class="upload-label">
+                            <svg
+                                class="w-12 h-12 mx-auto mb-3 text-muted-foreground"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="1.5"
+                                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                                ></path>
+                            </svg>
+                            <span class="text-muted-foreground"
+                                >Click to upload or drag and drop</span
+                            >
+                            <span
+                                class="text-xs text-muted-foreground mt-1 block"
+                                >PNG, JPG up to 10MB each</span
+                            >
+                        </label>
+                        <div id="file-preview" class="file-preview mt-4"></div>
+                    </div>
+                    <div class="flex justify-between mt-6">
+                        <button
+                            type="button"
+                            class="btn-prev border border-foreground/20 px-6 py-2 rounded hover:bg-muted transition-colors"
+                        >
+                            <svg
+                                class="inline-block w-4 h-4 mr-1"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M15 19l-7-7 7-7"></path>
+                            </svg>
+                            Back
+                        </button>
+                        <button
+                            type="button"
+                            class="btn-next bg-primary text-primary-foreground px-6 py-2 rounded hover:opacity-90 transition-opacity"
+                        >
+                            Next
+                            <svg
+                                class="inline-block w-4 h-4 ml-1"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M9 5l7 7-7 7"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 4: Contact Info -->
+                <div class="form-step" data-step="4">
+                    <h3 class="text-xl mb-4 font-doto">Your Details</h3>
+                    <p class="text-muted-foreground text-sm mb-4">
+                        How can we reach you?
+                    </p>
+                    <div class="grid gap-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-2"
+                                    >First Name</label
+                                >
+                                <input
+                                    type="text"
+                                    name="first_name"
+                                    placeholder="John"
+                                    class="w-full p-3 border rounded bg-background text-foreground"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2"
+                                    >Last Name</label
+                                >
+                                <input
+                                    type="text"
+                                    name="last_name"
+                                    placeholder="Doe"
+                                    class="w-full p-3 border rounded bg-background text-foreground"
+                                    required
+                                />
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2"
+                                >Email</label
+                            >
+                            <input
+                                type="email"
+                                name="email"
+                                placeholder="john@example.com"
+                                class="w-full p-3 border rounded bg-background text-foreground"
+                                required
+                            />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2"
+                                >Phone</label
+                            >
+                            <input
+                                type="tel"
+                                name="phone"
+                                placeholder="(123) 456-7890"
+                                class="w-full p-3 border rounded bg-background text-foreground"
+                                required
+                            />
+                        </div>
+                    </div>
+                    <div class="flex justify-between mt-6">
+                        <button
+                            type="button"
+                            class="btn-prev border border-foreground/20 px-6 py-2 rounded hover:bg-muted transition-colors"
+                        >
+                            <svg
+                                class="inline-block w-4 h-4 mr-1"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M15 19l-7-7 7-7"></path>
+                            </svg>
+                            Back
+                        </button>
+                        <button
+                            type="submit"
+                            class="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 transition-colors"
+                        >
+                            Submit Request
+                            <svg
+                                class="inline-block w-4 h-4 ml-1"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M5 13l4 4L19 7"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+            <!-- Loading State -->
+            <div id="booking-loading" class="booking-state hidden">
+                <div class="loading-spinner"></div>
+                <p class="mt-4 text-lg">Submitting your request...</p>
+            </div>
+
+            <!-- Success State -->
+            <div id="booking-success" class="booking-state hidden">
+                <div class="success-icon">
+                    <svg
+                        class="w-16 h-16 text-green-500"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                        ></path>
+                    </svg>
+                </div>
+                <h3 class="text-2xl font-bold mt-4 font-doto">Booking Sent!</h3>
+                <p class="text-muted-foreground mt-2">
+                    We'll get back to you within 24-48 hours.
+                </p>
+                <button
+                    id="booking-done"
+                    class="mt-6 bg-primary text-primary-foreground px-6 py-2 rounded hover:opacity-90 transition-opacity"
+                >
+                    Done
+                </button>
+            </div>
+        </div>
+    </div>
+</dialog>
+
+<style>
+    .booking-modal {
+        position: fixed;
+        max-width: 540px;
+        width: 90%;
+        max-height: 90vh;
+        overflow-y: auto;
+        padding: 0;
+        border: none;
+        border-radius: var(--radius);
+        background: hsl(var(--background));
+        color: hsl(var(--foreground));
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+
+    .booking-modal::backdrop {
+        background-color: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(4px);
+    }
+
+    .booking-modal[open] {
+        animation: modalSlideIn 0.3s ease-out;
+    }
+
+    @keyframes modalSlideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-20px) scale(0.95);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    .booking-modal-content {
+        position: relative;
+        padding: 2rem;
+    }
+
+    .booking-modal-close {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        padding: 0.5rem;
+        border-radius: 50%;
+        background: hsl(var(--muted));
+        color: hsl(var(--foreground));
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        z-index: 10;
+    }
+
+    .booking-modal-close:hover {
+        background: hsl(var(--accent));
+        transform: scale(1.1);
+    }
+
+    /* Initial Choice Step */
+    .booking-choice {
+        animation: fadeIn 0.3s ease-out;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
+    }
+
+    .choice-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+    }
+
+    .choice-card {
+        padding: 1.5rem;
+        border: 1px solid hsl(var(--border));
+        border-radius: var(--radius);
+        background: hsl(var(--muted));
+        cursor: pointer;
+        text-align: left;
+        transition: all 0.2s ease;
+    }
+
+    .choice-card:hover {
+        border-color: hsl(var(--primary));
+        background: hsl(var(--muted) / 0.8);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .choice-card h3 {
+        color: hsl(var(--foreground));
+    }
+
+    /* Progress Indicator */
+    .booking-progress {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1.5rem;
+        gap: 0;
+    }
+
+    .progress-step {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: hsl(var(--muted));
+        color: hsl(var(--muted-foreground));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.875rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .progress-step.active {
+        background: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
+        transform: scale(1.1);
+    }
+
+    .progress-step.completed {
+        background: hsl(142 76% 36%);
+        color: white;
+    }
+
+    .progress-line {
+        width: 40px;
+        height: 3px;
+        background: hsl(var(--muted));
+        transition: background 0.3s ease;
+    }
+
+    .progress-line.active {
+        background: hsl(var(--primary));
+    }
+
+    /* Form Steps */
+    .form-step {
+        display: none;
+        animation: stepFadeIn 0.3s ease-out;
+    }
+
+    .form-step.active {
+        display: block;
+    }
+
+    @keyframes stepFadeIn {
+        from {
+            opacity: 0;
+            transform: translateX(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    /* Upload Area */
+    .upload-area {
+        border: 2px dashed hsl(var(--border));
+        border-radius: var(--radius);
+        padding: 2rem;
+        text-align: center;
+        transition: all 0.2s ease;
+    }
+
+    .upload-area:hover {
+        border-color: hsl(var(--primary));
+        background: hsl(var(--muted) / 0.5);
+    }
+
+    .upload-label {
+        cursor: pointer;
+        display: block;
+    }
+
+    .file-preview {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        justify-content: center;
+    }
+
+    .file-preview-item {
+        position: relative;
+        width: 60px;
+        height: 60px;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .file-preview-item img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .file-preview-item .remove-file {
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        width: 18px;
+        height: 18px;
+        background: rgba(0, 0, 0, 0.6);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        cursor: pointer;
+        font-size: 12px;
+        line-height: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* States */
+    .booking-state {
+        text-align: center;
+        padding: 2rem;
+    }
+
+    .booking-state.hidden {
+        display: none;
+    }
+
+    .loading-spinner {
+        width: 48px;
+        height: 48px;
+        border: 4px solid hsl(var(--muted));
+        border-top-color: hsl(var(--primary));
+        border-radius: 50%;
+        margin: 0 auto;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    .success-icon {
+        animation: successPop 0.4s ease-out;
+    }
+
+    @keyframes successPop {
+        0% {
+            transform: scale(0);
+        }
+        50% {
+            transform: scale(1.2);
+        }
+        100% {
+            transform: scale(1);
+        }
+    }
+
+    .hidden {
+        display: none !important;
+    }
+
+    /* Mobile responsiveness */
+    @media (max-width: 640px) {
+        .booking-modal-content {
+            padding: 1.5rem;
+        }
+
+        .booking-progress {
+            transform: scale(0.9);
+        }
+
+        .progress-line {
+            width: 24px;
+        }
+
+        .form-step .grid-cols-2 {
+            grid-template-columns: 1fr;
+        }
+
+        .choice-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<script>
+    import { supabase } from "../lib/supabase";
+
+    document.addEventListener("DOMContentLoaded", () => {
+        const modal = document.getElementById(
+            "booking-modal",
+        ) as HTMLDialogElement;
+        const closeBtn = document.getElementById("booking-modal-close");
+        const doneBtn = document.getElementById("booking-done");
+        const form = document.getElementById("booking-form") as HTMLFormElement;
+        const loadingEl = document.getElementById("booking-loading");
+        const successEl = document.getElementById("booking-success");
+        const fileInput = document.getElementById(
+            "ref-photos",
+        ) as HTMLInputElement;
+        const filePreview = document.getElementById("file-preview");
+
+        // Choice elements
+        const bookingChoice = document.getElementById("booking-choice");
+        const bookingFormContainer = document.getElementById(
+            "booking-form-container",
+        );
+        const choiceCustom = document.getElementById("choice-custom");
+        const choiceFlash = document.getElementById("choice-flash");
+        const backToChoiceBtn = document.querySelector(".btn-back-to-choice");
+
+        let currentStep = 1;
+        const totalSteps = 4;
+        let selectedFiles: File[] = [];
+
+        // Listen for custom event to open modal
+        window.addEventListener("openBookingModal", () => {
+            if (modal) {
+                modal.showModal();
+
+                // Check if there's a pre-selected flash design
+                const savedDesign = sessionStorage.getItem(
+                    "selectedFlashDesign",
+                );
+                if (savedDesign) {
+                    try {
+                        const design = JSON.parse(savedDesign);
+                        // Pre-populate form with flash design info
+                        const ideaField = form?.querySelector(
+                            '[name="idea"]',
+                        ) as HTMLTextAreaElement;
+                        const sizeField = form?.querySelector(
+                            '[name="size"]',
+                        ) as HTMLSelectElement;
+
+                        if (ideaField) {
+                            ideaField.value = `Flash Design: ${design.text}\n\n${design.description}\n\nPrice: $${design.price}`;
+                        }
+
+                        // Try to match size
+                        if (sizeField && design.size) {
+                            if (
+                                design.size.includes("1-2") ||
+                                design.size.includes("2-3")
+                            ) {
+                                sizeField.value = "1-2 inches";
+                            } else if (
+                                design.size.includes("3-4") ||
+                                design.size.includes("4-5")
+                            ) {
+                                sizeField.value = "3-5 inches";
+                            } else if (
+                                design.size.includes("5-6") ||
+                                design.size.includes("6+")
+                            ) {
+                                sizeField.value = "6+ inches";
+                            }
+                        }
+
+                        // Clear the stored design
+                        sessionStorage.removeItem("selectedFlashDesign");
+
+                        // Skip to custom form directly
+                        showCustomForm();
+                        return;
+                    } catch (e) {
+                        console.error("Error parsing flash design:", e);
+                        sessionStorage.removeItem("selectedFlashDesign");
+                    }
+                }
+
+                resetToChoice();
+            }
+        });
+
+        // Choice handlers
+        choiceCustom?.addEventListener("click", () => {
+            showCustomForm();
+        });
+
+        choiceFlash?.addEventListener("click", () => {
+            // Navigate to flash designs page
+            modal?.close();
+            window.location.href = "/flash-designs";
+        });
+
+        // Back to choice from step 1
+        backToChoiceBtn?.addEventListener("click", () => {
+            showChoice();
+        });
+
+        function showCustomForm() {
+            bookingChoice?.classList.add("hidden");
+            bookingFormContainer?.classList.remove("hidden");
+            currentStep = 1;
+            showStep(currentStep);
+        }
+
+        function showChoice() {
+            bookingFormContainer?.classList.add("hidden");
+            bookingChoice?.classList.remove("hidden");
+        }
+
+        function resetToChoice() {
+            currentStep = 1;
+            selectedFiles = [];
+            form?.reset();
+            form?.classList.remove("hidden");
+            loadingEl?.classList.add("hidden");
+            successEl?.classList.add("hidden");
+            if (filePreview) filePreview.innerHTML = "";
+            showStep(1);
+            showChoice();
+
+            // Remove any validation styling
+            document.querySelectorAll(".border-red-500").forEach((el) => {
+                el.classList.remove("border-red-500");
+            });
+        }
+
+        // Close modal handlers
+        closeBtn?.addEventListener("click", () => {
+            modal?.close();
+        });
+
+        doneBtn?.addEventListener("click", () => {
+            modal?.close();
+            resetToChoice();
+        });
+
+        // Close on backdrop click
+        modal?.addEventListener("click", (e) => {
+            if (e.target === modal) {
+                modal.close();
+            }
+        });
+
+        // Close on Escape key
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "Escape" && modal?.open) {
+                modal.close();
+            }
+        });
+
+        // Step Navigation
+        function updateProgress() {
+            const progressSteps = document.querySelectorAll(".progress-step");
+            const progressLines = document.querySelectorAll(".progress-line");
+
+            progressSteps.forEach((step, index) => {
+                const stepNum = index + 1;
+                step.classList.remove("active", "completed");
+
+                if (stepNum < currentStep) {
+                    step.classList.add("completed");
+                } else if (stepNum === currentStep) {
+                    step.classList.add("active");
+                }
+            });
+
+            progressLines.forEach((line, index) => {
+                line.classList.toggle("active", index < currentStep - 1);
+            });
+        }
+
+        function showStep(stepNum: number) {
+            const steps = document.querySelectorAll(".form-step");
+            steps.forEach((step) => {
+                step.classList.remove("active");
+                if (
+                    parseInt(step.getAttribute("data-step") || "0") === stepNum
+                ) {
+                    step.classList.add("active");
+                }
+            });
+            updateProgress();
+        }
+
+        function validateCurrentStep(): boolean {
+            const currentStepEl = document.querySelector(
+                `[data-step="${currentStep}"]`,
+            );
+            if (!currentStepEl) return true;
+
+            const requiredInputs = currentStepEl.querySelectorAll(
+                "[required]",
+            ) as NodeListOf<
+                HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+            >;
+            let valid = true;
+
+            requiredInputs.forEach((input) => {
+                if (!input.value.trim()) {
+                    valid = false;
+                    input.classList.add("border-red-500");
+                } else {
+                    input.classList.remove("border-red-500");
+                }
+            });
+
+            return valid;
+        }
+
+        // Next button handlers
+        document.querySelectorAll(".btn-next").forEach((btn) => {
+            btn.addEventListener("click", () => {
+                if (validateCurrentStep() && currentStep < totalSteps) {
+                    currentStep++;
+                    showStep(currentStep);
+                }
+            });
+        });
+
+        // Previous button handlers
+        document.querySelectorAll(".btn-prev").forEach((btn) => {
+            btn.addEventListener("click", () => {
+                if (currentStep > 1) {
+                    currentStep--;
+                    showStep(currentStep);
+                }
+            });
+        });
+
+        // File upload preview
+        fileInput?.addEventListener("change", () => {
+            if (fileInput.files) {
+                selectedFiles = Array.from(fileInput.files);
+                updateFilePreview();
+            }
+        });
+
+        function updateFilePreview() {
+            if (!filePreview) return;
+            filePreview.innerHTML = "";
+
+            selectedFiles.forEach((file, index) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const div = document.createElement("div");
+                    div.className = "file-preview-item";
+                    div.innerHTML = `
+            <img src="${e.target?.result}" alt="Preview ${index + 1}" />
+            <button type="button" class="remove-file" data-index="${index}">&times;</button>
+          `;
+                    filePreview.appendChild(div);
+
+                    // Add remove handler
+                    div.querySelector(".remove-file")?.addEventListener(
+                        "click",
+                        () => {
+                            selectedFiles.splice(index, 1);
+                            updateFilePreview();
+                        },
+                    );
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // Form submission
+        form?.addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            if (!validateCurrentStep()) return;
+
+            // Show loading state
+            form.classList.add("hidden");
+            loadingEl?.classList.remove("hidden");
+
+            const formData = new FormData(form);
+            const uploadedUrls: string[] = [];
+
+            try {
+                // Upload images
+                for (const file of selectedFiles) {
+                    const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, "")}`;
+                    const { data, error } = await supabase.storage
+                        .from("reference-photos")
+                        .upload(fileName, file);
+
+                    if (data && !error) {
+                        const {
+                            data: { publicUrl },
+                        } = supabase.storage
+                            .from("reference-photos")
+                            .getPublicUrl(fileName);
+                        uploadedUrls.push(publicUrl);
+                    }
+                }
+
+                // Insert booking
+                const { error } = await supabase.from("bookings").insert({
+                    first_name: formData.get("first_name"),
+                    last_name: formData.get("last_name"),
+                    email: formData.get("email"),
+                    phone: formData.get("phone"),
+                    tattoo_idea: formData.get("idea"),
+                    tattoo_placement: formData.get("placement"),
+                    tattoo_size: formData.get("size"),
+                    is_custom: true,
+                    reference_photos: uploadedUrls,
+                    status: "pending",
+                });
+
+                loadingEl?.classList.add("hidden");
+
+                if (!error) {
+                    successEl?.classList.remove("hidden");
+                } else {
+                    form.classList.remove("hidden");
+                    alert("Error submitting booking: " + error.message);
+                }
+            } catch (err) {
+                loadingEl?.classList.add("hidden");
+                form.classList.remove("hidden");
+                alert("An error occurred. Please try again.");
+            }
+        });
+    });
+</script>

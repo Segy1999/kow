@@ -1,0 +1,601 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import { supabase } from "../../../lib/supabase";
+
+// Fetch all bookings
+let bookings: any[] = [];
+let error = null;
+
+try {
+    const { data, error: fetchError } = await supabase
+        .from("bookings")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+    if (fetchError) throw fetchError;
+    bookings = data || [];
+} catch (e) {
+    console.error("Error fetching bookings:", e);
+    error = e;
+}
+
+// Group bookings by status
+const pendingBookings = bookings.filter((b) => b.status === "pending");
+const acceptedBookings = bookings.filter((b) => b.status === "accepted");
+const deniedBookings = bookings.filter((b) => b.status === "denied");
+
+// Format date helper
+function formatDate(dateString: string) {
+    return new Date(dateString).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+    });
+}
+
+function getStatusColor(status: string) {
+    switch (status) {
+        case "pending":
+            return "bg-yellow-100 text-yellow-800 border-yellow-200";
+        case "accepted":
+            return "bg-green-100 text-green-800 border-green-200";
+        case "denied":
+            return "bg-red-100 text-red-800 border-red-200";
+        default:
+            return "bg-gray-100 text-gray-800 border-gray-200";
+    }
+}
+---
+
+<AdminLayout title="Bookings">
+    <!-- Filter Tabs -->
+    <div class="mb-6">
+        <div class="flex gap-2 flex-wrap">
+            <button
+                data-filter="all"
+                class="filter-btn active px-4 py-2 rounded-lg font-medium transition-colors bg-purple-600 text-white"
+            >
+                All ({bookings.length})
+            </button>
+            <button
+                data-filter="pending"
+                class="filter-btn px-4 py-2 rounded-lg font-medium transition-colors bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
+            >
+                Pending ({pendingBookings.length})
+            </button>
+            <button
+                data-filter="accepted"
+                class="filter-btn px-4 py-2 rounded-lg font-medium transition-colors bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
+            >
+                Accepted ({acceptedBookings.length})
+            </button>
+            <button
+                data-filter="denied"
+                class="filter-btn px-4 py-2 rounded-lg font-medium transition-colors bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
+            >
+                Denied ({deniedBookings.length})
+            </button>
+        </div>
+    </div>
+
+    {
+        error ? (
+            <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-6 text-center">
+                <p class="text-red-600 dark:text-red-400">
+                    Error loading bookings. Please try again.
+                </p>
+            </div>
+        ) : bookings.length === 0 ? (
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-12 text-center">
+                <svg
+                    class="w-16 h-16 mx-auto text-gray-400 mb-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                >
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                    />
+                </svg>
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                    No Bookings Yet
+                </h3>
+                <p class="text-gray-500 dark:text-gray-400">
+                    When clients submit booking requests, they'll appear here.
+                </p>
+            </div>
+        ) : (
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-50 dark:bg-gray-700/50">
+                            <tr>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Client
+                                </th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Tattoo Idea
+                                </th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Size / Placement
+                                </th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Status
+                                </th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Date
+                                </th>
+                                <th class="px-6 py-4 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Actions
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                            {bookings.map((booking) => (
+                                <tr
+                                    class="booking-row hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors"
+                                    data-status={booking.status}
+                                >
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center flex-shrink-0">
+                                                <span class="text-purple-600 dark:text-purple-400 font-semibold text-sm">
+                                                    {booking.first_name?.[0]?.toUpperCase()}
+                                                    {booking.last_name?.[0]?.toUpperCase()}
+                                                </span>
+                                            </div>
+                                            <div>
+                                                <p class="font-medium text-gray-900 dark:text-white">
+                                                    {booking.first_name}{" "}
+                                                    {booking.last_name}
+                                                </p>
+                                                <p class="text-sm text-gray-500 dark:text-gray-400">
+                                                    {booking.email}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <p class="text-gray-900 dark:text-white max-w-xs truncate">
+                                            {booking.tattoo_idea}
+                                        </p>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <p class="text-gray-900 dark:text-white">
+                                            {booking.tattoo_size}
+                                        </p>
+                                        <p class="text-sm text-gray-500 dark:text-gray-400">
+                                            {booking.tattoo_placement}
+                                        </p>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <span
+                                            class={`inline-flex px-3 py-1 rounded-full text-xs font-medium capitalize border ${getStatusColor(booking.status)}`}
+                                        >
+                                            {booking.status}
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                                        {formatDate(booking.created_at)}
+                                    </td>
+                                    <td class="px-6 py-4 text-right">
+                                        <div class="flex items-center justify-end gap-2">
+                                            {booking.status === "pending" && (
+                                                <>
+                                                    <button
+                                                        class="action-btn accept-btn p-2 text-green-600 hover:bg-green-100 dark:hover:bg-green-900/30 rounded-lg transition-colors"
+                                                        data-id={booking.id}
+                                                        title="Accept"
+                                                    >
+                                                        <svg
+                                                            class="w-5 h-5"
+                                                            fill="none"
+                                                            stroke="currentColor"
+                                                            viewBox="0 0 24 24"
+                                                        >
+                                                            <path
+                                                                stroke-linecap="round"
+                                                                stroke-linejoin="round"
+                                                                stroke-width="2"
+                                                                d="M5 13l4 4L19 7"
+                                                            />
+                                                        </svg>
+                                                    </button>
+                                                    <button
+                                                        class="action-btn deny-btn p-2 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                                                        data-id={booking.id}
+                                                        title="Deny"
+                                                    >
+                                                        <svg
+                                                            class="w-5 h-5"
+                                                            fill="none"
+                                                            stroke="currentColor"
+                                                            viewBox="0 0 24 24"
+                                                        >
+                                                            <path
+                                                                stroke-linecap="round"
+                                                                stroke-linejoin="round"
+                                                                stroke-width="2"
+                                                                d="M6 18L18 6M6 6l12 12"
+                                                            />
+                                                        </svg>
+                                                    </button>
+                                                </>
+                                            )}
+                                            <a
+                                                href={`/admin/bookings/${booking.id}`}
+                                                class="p-2 text-purple-600 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-lg transition-colors"
+                                                title="View Details"
+                                            >
+                                                <svg
+                                                    class="w-5 h-5"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    viewBox="0 0 24 24"
+                                                >
+                                                    <path
+                                                        stroke-linecap="round"
+                                                        stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                                                    />
+                                                    <path
+                                                        stroke-linecap="round"
+                                                        stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                                                    />
+                                                </svg>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        )
+    }
+
+    <!-- Status Update Modal -->
+    <dialog
+        id="status-modal"
+        class="fixed inset-0 z-50 bg-transparent p-4"
+    >
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full mx-auto mt-20 p-6">
+            <h3 id="modal-title" class="text-xl font-bold text-gray-900 dark:text-white mb-4">
+                Update Booking Status
+            </h3>
+            <p id="modal-description" class="text-gray-600 dark:text-gray-400 mb-6">
+                Are you sure you want to update this booking?
+            </p>
+
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Admin Notes (Optional)
+                </label>
+                <textarea
+                    id="admin-notes"
+                    rows="3"
+                    class="w-full px-4 py-3 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    placeholder="Add any notes about this booking..."
+                ></textarea>
+            </div>
+
+            <div class="flex justify-end gap-3">
+                <button
+                    id="modal-cancel"
+                    class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                >
+                    Cancel
+                </button>
+                <button
+                    id="modal-confirm"
+                    class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                >
+                    Confirm
+                </button>
+            </div>
+        </div>
+    </dialog>
+
+    <!-- Client Link Modal -->
+    <dialog
+        id="link-modal"
+        class="fixed inset-0 z-50 bg-transparent p-4"
+    >
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-lg w-full mx-auto mt-20 p-6">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="p-2 bg-green-100 dark:bg-green-900/30 rounded-full">
+                    <svg
+                        class="w-6 h-6 text-green-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                        ></path>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white">
+                    Booking Accepted!
+                </h3>
+            </div>
+
+            <p class="text-gray-600 dark:text-gray-400 mb-4">
+                Share this link with the client so they can view their booking status and chat with you:
+            </p>
+
+            <div class="flex gap-2 mb-6">
+                <input
+                    id="client-link"
+                    type="text"
+                    readonly
+                    class="flex-1 px-4 py-3 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white text-sm"
+                />
+                <button
+                    id="copy-link"
+                    class="px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2"
+                >
+                    <svg
+                        class="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                        ></path>
+                    </svg>
+                    Copy
+                </button>
+            </div>
+
+            <div class="flex justify-end">
+                <button
+                    id="link-modal-close"
+                    class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                >
+                    Done
+                </button>
+            </div>
+        </div>
+    </dialog>
+</AdminLayout>
+
+<script>
+    import { supabase } from "../../../lib/supabase";
+
+    // Filter functionality
+    const filterBtns = document.querySelectorAll(".filter-btn");
+    const bookingRows = document.querySelectorAll(".booking-row");
+
+    filterBtns.forEach((btn) => {
+        btn.addEventListener("click", () => {
+            const filter = btn.getAttribute("data-filter");
+
+            // Update active state
+            filterBtns.forEach((b) => {
+                b.classList.remove(
+                    "active",
+                    "bg-purple-600",
+                    "text-white",
+                );
+                b.classList.add(
+                    "bg-gray-200",
+                    "dark:bg-gray-700",
+                    "text-gray-700",
+                    "dark:text-gray-300",
+                );
+            });
+            btn.classList.add("active", "bg-purple-600", "text-white");
+            btn.classList.remove(
+                "bg-gray-200",
+                "dark:bg-gray-700",
+                "text-gray-700",
+                "dark:text-gray-300",
+            );
+
+            // Filter rows
+            bookingRows.forEach((row) => {
+                const status = row.getAttribute("data-status");
+                if (filter === "all" || status === filter) {
+                    (row as HTMLElement).style.display = "";
+                } else {
+                    (row as HTMLElement).style.display = "none";
+                }
+            });
+        });
+    });
+
+    // Status update modal
+    const statusModal = document.getElementById("status-modal") as HTMLDialogElement;
+    const modalTitle = document.getElementById("modal-title");
+    const modalDescription = document.getElementById("modal-description");
+    const modalCancel = document.getElementById("modal-cancel");
+    const modalConfirm = document.getElementById("modal-confirm");
+    const adminNotes = document.getElementById("admin-notes") as HTMLTextAreaElement;
+
+    // Link modal
+    const linkModal = document.getElementById("link-modal") as HTMLDialogElement;
+    const clientLinkInput = document.getElementById("client-link") as HTMLInputElement;
+    const copyLinkBtn = document.getElementById("copy-link");
+    const linkModalClose = document.getElementById("link-modal-close");
+
+    let currentBookingId: string | null = null;
+    let currentAction: "accept" | "deny" | null = null;
+
+    // Accept buttons
+    document.querySelectorAll(".accept-btn").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+            e.preventDefault();
+            currentBookingId = btn.getAttribute("data-id");
+            currentAction = "accept";
+
+            if (modalTitle) modalTitle.textContent = "Accept Booking";
+            if (modalDescription)
+                modalDescription.textContent =
+                    "This will accept the booking and generate a client access link.";
+            if (modalConfirm) {
+                modalConfirm.classList.remove("bg-red-600", "hover:bg-red-700");
+                modalConfirm.classList.add("bg-green-600", "hover:bg-green-700");
+                modalConfirm.textContent = "Accept";
+            }
+
+            adminNotes.value = "";
+            statusModal.showModal();
+        });
+    });
+
+    // Deny buttons
+    document.querySelectorAll(".deny-btn").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+            e.preventDefault();
+            currentBookingId = btn.getAttribute("data-id");
+            currentAction = "deny";
+
+            if (modalTitle) modalTitle.textContent = "Deny Booking";
+            if (modalDescription)
+                modalDescription.textContent =
+                    "This will deny the booking request. You can add a reason in the notes.";
+            if (modalConfirm) {
+                modalConfirm.classList.remove("bg-green-600", "hover:bg-green-700");
+                modalConfirm.classList.add("bg-red-600", "hover:bg-red-700");
+                modalConfirm.textContent = "Deny";
+            }
+
+            adminNotes.value = "";
+            statusModal.showModal();
+        });
+    });
+
+    // Modal cancel
+    modalCancel?.addEventListener("click", () => {
+        statusModal.close();
+        currentBookingId = null;
+        currentAction = null;
+    });
+
+    // Modal confirm
+    modalConfirm?.addEventListener("click", async () => {
+        if (!currentBookingId || !currentAction) return;
+
+        const newStatus = currentAction === "accept" ? "accepted" : "denied";
+        const notes = adminNotes.value.trim();
+
+        try {
+            const updates: any = { status: newStatus };
+            if (notes) updates.admin_notes = notes;
+
+            // Generate client access token if accepting
+            if (currentAction === "accept") {
+                updates.client_access_token = crypto.randomUUID();
+            }
+
+            const { data, error } = await supabase
+                .from("bookings")
+                .update(updates)
+                .eq("id", currentBookingId)
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            statusModal.close();
+
+            // Show link modal if accepted
+            if (currentAction === "accept" && data?.client_access_token) {
+                const baseUrl = window.location.origin;
+                const clientLink = `${baseUrl}/my-booking/${data.client_access_token}`;
+                clientLinkInput.value = clientLink;
+                linkModal.showModal();
+            }
+
+            // Reload page to show updated status
+            setTimeout(() => {
+                window.location.reload();
+            }, currentAction === "accept" ? 0 : 500);
+        } catch (err) {
+            console.error("Error updating booking:", err);
+            alert("Failed to update booking. Please try again.");
+        }
+    });
+
+    // Copy link
+    copyLinkBtn?.addEventListener("click", async () => {
+        try {
+            await navigator.clipboard.writeText(clientLinkInput.value);
+            copyLinkBtn.innerHTML = `
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                Copied!
+            `;
+            setTimeout(() => {
+                copyLinkBtn.innerHTML = `
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                    </svg>
+                    Copy
+                `;
+            }, 2000);
+        } catch (err) {
+            console.error("Failed to copy:", err);
+        }
+    });
+
+    // Link modal close
+    linkModalClose?.addEventListener("click", () => {
+        linkModal.close();
+        window.location.reload();
+    });
+
+    // Close modals on backdrop click
+    statusModal?.addEventListener("click", (e) => {
+        if (e.target === statusModal) {
+            statusModal.close();
+        }
+    });
+
+    linkModal?.addEventListener("click", (e) => {
+        if (e.target === linkModal) {
+            linkModal.close();
+            window.location.reload();
+        }
+    });
+</script>
+
+<style>
+    dialog::backdrop {
+        background-color: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(4px);
+    }
+
+    dialog[open] {
+        animation: fadeIn 0.2s ease-out;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+</style>

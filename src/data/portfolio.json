@@ -1,0 +1,27 @@
+[
+    {
+        "image": "/images/portfolio/boondocks.png",
+        "text": "Boondocks Portrait",
+        "description": "A vibrant tribute to the iconic Boondocks animated series, featuring detailed linework and rich color saturation."
+    },
+    {
+        "image": "/images/portfolio/dragon.png",
+        "text": "Dragon Design",
+        "description": "A powerful dragon tattoo featuring intricate scales and dynamic movement, crafted with precision shading."
+    },
+    {
+        "image": "/images/portfolio/frsnchise.png",
+        "text": "Franchise Piece",
+        "description": "Bold artistic expression with clean lines and creative composition, representing personal style and identity."
+    },
+    {
+        "image": "/images/portfolio/luvers.png",
+        "text": "Lovers Art",
+        "description": "An emotional piece capturing connection and intimacy through flowing artistic design and subtle color gradients."
+    },
+    {
+        "image": "/images/portfolio/naruto.png",
+        "text": "Naruto Tribute",
+        "description": "A dynamic anime-inspired tattoo featuring the legendary ninja, showcasing vibrant colors and action-packed composition."
+    }
+]

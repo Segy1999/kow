@@ -1,0 +1,385 @@
+@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Great+Vibes:&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Pacifico&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Doto:wght@100..900&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    :root {
+        --background: 0 0% 70%;
+        --foreground: 240 10% 3.9%;
+        --card: 0 0% 100%;
+        --card-foreground: 240 10% 3.9%;
+        --popover: 0 0% 100%;
+        --popover-foreground: 240 10% 3.9%;
+        --primary: 271 81% 51%;
+        --primary-foreground: 0 0% 98%;
+        --secondary: 240 4.8% 95.9%;
+        --secondary-foreground: 240 5.9% 10%;
+        --muted: 240 4.8% 95.9%;
+        --muted-foreground: 240 3.8% 46.1%;
+        --accent: 240 4.8% 95.9%;
+        --accent-foreground: 240 5.9% 10%;
+        --destructive: 0 84.2% 60.2%;
+        --destructive-foreground: 0 0% 98%;
+        --border: 240 5.9% 90%;
+        --input: 240 5.9% 90%;
+        --ring: 271 81% 51%;
+        --radius: 0.75rem;
+        --pink-cream: 0 100% 96%;
+        /* #FFF0F5 */
+    }
+
+    .dark {
+        --background: 240 10% 3.9%;
+        --foreground: 0 0% 98%;
+        --card: 240 10% 3.9%;
+        --card-foreground: 0 0% 98%;
+        --popover: 240 10% 3.9%;
+        --popover-foreground: 0 0% 98%;
+        --primary: 271 81% 51%;
+        --primary-foreground: 0 0% 98%;
+        --secondary: 240 3.7% 15.9%;
+        --secondary-foreground: 0 0% 98%;
+        --muted: 240 3.7% 15.9%;
+        --muted-foreground: 240 5% 64.9%;
+        --accent: 240 3.7% 15.9%;
+        --accent-foreground: 0 0% 98%;
+        --destructive: 0 62.8% 30.6%;
+        --destructive-foreground: 0 0% 98%;
+        --border: 240 3.7% 15.9%;
+        --input: 240 3.7% 15.9%;
+        --ring: 271 81% 51%;
+    }
+}
+
+@layer base {
+    * {
+        @apply border-border;
+    }
+
+    body {
+        @apply bg-background text-foreground font-playfair;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        @apply font-doto;
+    }
+}
+
+.hero-gradient {
+    background: linear-gradient(135deg, #6b46c1 0%, #0a0a0a 100%);
+}
+
+.portfolio-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 2rem;
+}
+
+.animate-slide-up {
+    animation: slideUp 0.5s ease-out forwards;
+}
+
+.booking-form-container {
+    margin-top: 60px;
+    /* Adjust this value based on your navbar height */
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes shooting-star {
+    from {
+        transform: translate(0, 0);
+    }
+
+    to {
+        transform: translate(var(--end-x), var(--end-y));
+        opacity: 0;
+    }
+}
+
+/* Circular Gallery Styles */
+.circular-gallery {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    cursor: grab;
+    position: relative;
+    touch-action: none;
+    background: transparent;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.circular-gallery:active {
+    cursor: grabbing;
+}
+
+.circular-gallery canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    touch-action: none;
+}
+
+.gallery-wrapper {
+    position: relative;
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: linear-gradient(
+        135deg,
+        hsl(var(--background) / 0.5) 0%,
+        hsl(var(--muted) / 0.3) 100%
+    );
+}
+
+.gallery-instructions {
+    position: absolute;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    color: hsl(var(--foreground));
+    opacity: 0.6;
+    font-size: 0.875rem;
+    font-family: "Doto", sans-serif;
+    pointer-events: none;
+    z-index: 10;
+    text-align: center;
+    transition: opacity 0.3s ease;
+    background: hsl(var(--background) / 0.5);
+    padding: 0.5rem 1.5rem;
+    border-radius: 9999px;
+    backdrop-filter: blur(8px);
+}
+
+.gallery-wrapper:hover .gallery-instructions,
+.circular-gallery:hover + .gallery-instructions {
+    opacity: 0.9;
+}
+
+/* Portfolio Modal Styles */
+#portfolio-modal {
+    border: none;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+#portfolio-modal::backdrop {
+    background-color: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(4px);
+}
+
+#portfolio-modal[open] {
+    animation: modalFadeIn 0.3s ease-out;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Modal content responsive styles */
+#portfolio-modal .grid {
+    display: grid;
+}
+
+@media (max-width: 768px) {
+    #portfolio-modal .grid {
+        grid-template-columns: 1fr;
+    }
+
+    #portfolio-modal img {
+        max-height: 50vh !important;
+    }
+}
+
+@media (min-width: 769px) {
+    #portfolio-modal .grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+/* ================================
+   Booking Modal Styles
+   ================================ */
+
+/* Booking Modal Backdrop */
+#booking-modal::backdrop {
+    background-color: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(4px);
+    animation: backdropFadeIn 0.3s ease-out;
+}
+
+@keyframes backdropFadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* Step Transition Animations */
+.form-step-enter {
+    animation: stepSlideIn 0.3s ease-out forwards;
+}
+
+.form-step-exit {
+    animation: stepSlideOut 0.3s ease-out forwards;
+}
+
+@keyframes stepSlideIn {
+    from {
+        opacity: 0;
+        transform: translateX(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes stepSlideOut {
+    from {
+        opacity: 1;
+        transform: translateX(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateX(-30px);
+    }
+}
+
+/* Reverse animation for going back */
+.form-step-enter-reverse {
+    animation: stepSlideInReverse 0.3s ease-out forwards;
+}
+
+.form-step-exit-reverse {
+    animation: stepSlideOutReverse 0.3s ease-out forwards;
+}
+
+@keyframes stepSlideInReverse {
+    from {
+        opacity: 0;
+        transform: translateX(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes stepSlideOutReverse {
+    from {
+        opacity: 1;
+        transform: translateX(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateX(30px);
+    }
+}
+
+/* Fade transition alternative */
+.form-step-fade-enter {
+    animation: stepFadeIn 0.3s ease-out forwards;
+}
+
+.form-step-fade-exit {
+    animation: stepFadeOut 0.2s ease-out forwards;
+}
+
+@keyframes stepFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes stepFadeOut {
+    from {
+        opacity: 1;
+        transform: scale(1);
+    }
+    to {
+        opacity: 0;
+        transform: scale(0.98);
+    }
+}
+
+/* Booking trigger button styles */
+.booking-trigger {
+    font-family: inherit;
+    font-size: inherit;
+}
+
+/* Ensure modal displays above everything */
+#booking-modal {
+    z-index: 100;
+}
+
+/* Smooth height transitions for modal content */
+.booking-modal-content {
+    transition: height 0.3s ease-out;
+}
+
+/* Input focus states for booking form */
+#booking-form input:focus,
+#booking-form textarea:focus,
+#booking-form select:focus {
+    outline: none;
+    border-color: hsl(var(--primary));
+    box-shadow: 0 0 0 3px hsl(var(--primary) / 0.1);
+}
+
+/* Validation error state */
+#booking-form .border-red-500 {
+    border-color: hsl(0 84.2% 60.2%) !important;
+    animation: shake 0.4s ease-out;
+}
+
+@keyframes shake {
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+    20%,
+    60% {
+        transform: translateX(-4px);
+    }
+    40%,
+    80% {
+        transform: translateX(4px);
+    }
+}

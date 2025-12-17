@@ -1,0 +1,253 @@
+---
+import Layout from "../layouts/Layout.astro";
+import { supabase } from "../lib/supabase";
+
+// Fetch policy text from site_settings
+let policyContent = "";
+
+try {
+    const { data } = await supabase
+        .from("site_settings")
+        .select("value")
+        .eq("key", "policy_text")
+        .single();
+
+    policyContent = data?.value || "";
+} catch (error) {
+    console.error("Error fetching policy text:", error);
+}
+
+// Default content if nothing in database
+const defaultContent = `
+# Studio Policies & Terms
+
+Welcome to KowTattys! Please read through our policies carefully before booking your appointment. These guidelines help ensure a safe, professional, and enjoyable experience for everyone.
+
+## Booking & Deposits
+
+- A **non-refundable deposit** is required to secure your appointment
+- Deposits range from $50-$200 depending on the size and complexity of your tattoo
+- Your deposit will be applied to the final cost of your tattoo
+- Deposits are forfeited if you cancel within 48 hours of your appointment
+
+## Rescheduling Policy
+
+- Please provide at least **48 hours notice** if you need to reschedule
+- Rescheduling with less than 48 hours notice may result in loss of your deposit
+- You may reschedule up to 2 times before a new deposit is required
+- We understand emergencies happen - please communicate with us
+
+## Day of Your Appointment
+
+### Preparation
+- Get a good night's sleep before your appointment
+- Eat a substantial meal 1-2 hours before your session
+- Stay hydrated - drink plenty of water the day before and day of
+- Avoid alcohol for at least 24 hours before your appointment
+- Avoid blood thinners (aspirin, ibuprofen) for 24 hours prior
+
+### What to Bring
+- Valid government-issued photo ID
+- Your reference images (if not already submitted)
+- Comfortable clothing that allows access to the tattoo area
+- Snacks and drinks for longer sessions
+- Entertainment (phone, book, etc.) for extended sessions
+
+### Health Requirements
+- You must be **18 years or older** with valid ID
+- Inform us of any medical conditions, allergies, or medications
+- We cannot tattoo if you are pregnant or nursing
+- If you are sick, please reschedule your appointment
+- No tattoos if you have sunburn in the area to be tattooed
+
+## During Your Session
+
+- One support person is allowed; additional guests require approval
+- Please silence your phone during the tattoo process
+- Let your artist know if you need a break at any time
+- Communicate openly about your comfort level
+
+## Pricing
+
+- Prices are determined based on size, detail, placement, and time
+- Minimum charge is **$100** for any tattoo
+- Larger pieces may be quoted as a flat rate or hourly rate
+- Touch-ups within 3 months are free (if aftercare instructions were followed)
+- Cover-ups and reworks are priced on a case-by-case basis
+
+## Aftercare
+
+- You will receive detailed aftercare instructions after your session
+- Follow all aftercare instructions carefully for optimal healing
+- Healing typically takes 2-4 weeks
+- Avoid swimming, sun exposure, and soaking for 2-3 weeks
+- Contact us immediately if you notice signs of infection
+
+## Refund Policy
+
+- Deposits are non-refundable
+- We do not offer refunds on completed tattoos
+- If you are unhappy with your tattoo, please contact us to discuss options
+- Free touch-ups are available within 3 months for any healing issues
+
+## Our Commitment
+
+We are committed to providing:
+- A clean, sterile, and safe environment
+- High-quality, professional tattooing
+- Clear communication throughout your experience
+- Respect for your time, ideas, and concerns
+
+## Contact Us
+
+If you have any questions about our policies, please don't hesitate to reach out before your appointment. We're happy to address any concerns you may have.
+
+---
+
+*Last updated: January 2024*
+`;
+
+const displayContent = policyContent || defaultContent;
+
+// Simple markdown-like parsing
+function parseContent(content: string) {
+    return content
+        .split('\n')
+        .map(line => {
+            // Horizontal rule
+            if (line.trim() === '---') {
+                return '<hr class="my-8 border-gray-300 dark:border-gray-600" />';
+            }
+            // Headers
+            if (line.startsWith('### ')) {
+                return `<h3 class="text-xl font-bold mt-6 mb-3 font-doto text-gray-900 dark:text-white">${line.slice(4)}</h3>`;
+            }
+            if (line.startsWith('## ')) {
+                return `<h2 class="text-2xl font-bold mt-8 mb-4 font-doto text-gray-900 dark:text-white">${line.slice(3)}</h2>`;
+            }
+            if (line.startsWith('# ')) {
+                return `<h1 class="text-4xl font-bold mb-6 font-doto text-gray-900 dark:text-white">${line.slice(2)}</h1>`;
+            }
+            // Bold text
+            line = line.replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-gray-900 dark:text-white">$1</strong>');
+            // Italic text
+            line = line.replace(/\*(.*?)\*/g, '<em>$1</em>');
+            // List items
+            if (line.startsWith('- ')) {
+                return `<li class="ml-4 mb-2 text-gray-700 dark:text-gray-300">${line.slice(2)}</li>`;
+            }
+            // Empty lines
+            if (line.trim() === '') {
+                return '<br />';
+            }
+            // Regular paragraphs
+            return `<p class="mb-4 text-gray-700 dark:text-gray-300">${line}</p>`;
+        })
+        .join('\n');
+}
+---
+
+<Layout title="Policies & Terms | KowTattys">
+    <div class="container mx-auto px-4 py-12 max-w-4xl">
+        <!-- Hero Section -->
+        <div class="text-center mb-12">
+            <h1 class="text-5xl font-bold font-doto mb-4">Policies & Terms</h1>
+            <p class="text-xl text-muted-foreground">
+                Everything you need to know before your appointment
+            </p>
+        </div>
+
+        <!-- Main Content -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 md:p-12">
+            <article class="prose dark:prose-invert max-w-none">
+                <Fragment set:html={parseContent(displayContent)} />
+            </article>
+        </div>
+
+        <!-- Quick Links -->
+        <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <a
+                href="/contact"
+                class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow group"
+            >
+                <div class="flex items-center gap-4">
+                    <div class="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg group-hover:bg-purple-200 dark:group-hover:bg-purple-900/50 transition-colors">
+                        <svg class="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-900 dark:text-white">Contact Us</h3>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Have questions?</p>
+                    </div>
+                </div>
+            </a>
+
+            <button
+                class="booking-trigger bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow group text-left"
+            >
+                <div class="flex items-center gap-4">
+                    <div class="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg group-hover:bg-green-200 dark:group-hover:bg-green-900/50 transition-colors">
+                        <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-900 dark:text-white">Book Now</h3>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Ready to get inked?</p>
+                    </div>
+                </div>
+            </button>
+
+            <a
+                href="/flash-designs"
+                class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow group"
+            >
+                <div class="flex items-center gap-4">
+                    <div class="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg group-hover:bg-blue-200 dark:group-hover:bg-blue-900/50 transition-colors">
+                        <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-900 dark:text-white">Flash Designs</h3>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Browse our collection</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <!-- Back to Home -->
+        <div class="text-center mt-8">
+            <a href="/" class="text-purple-600 hover:underline">
+                ← Back to Homepage
+            </a>
+        </div>
+    </div>
+</Layout>
+
+<style>
+    article h1 {
+        @apply text-4xl font-bold mb-6;
+    }
+
+    article h2 {
+        @apply text-2xl font-bold mt-8 mb-4;
+    }
+
+    article h3 {
+        @apply text-xl font-bold mt-6 mb-3;
+    }
+
+    article p {
+        @apply mb-4;
+    }
+
+    article ul {
+        @apply list-disc list-inside mb-4;
+    }
+
+    article li {
+        @apply mb-2;
+    }
+</style>

@@ -1,0 +1,177 @@
+---
+import Layout from "../layouts/Layout.astro";
+import CircularGallery from "../components/CircularGallery.jsx";
+import { supabase } from "../lib/supabase";
+
+// Default/fallback portfolio data
+const defaultPortfolioData = [
+    {
+        image: "/images/portfolio/boondocks.png",
+        text: "Boondocks Portrait",
+        description:
+            "A vibrant tribute to the iconic Boondocks animated series, featuring detailed linework and rich color saturation.",
+    },
+    {
+        image: "/images/portfolio/dragon.png",
+        text: "Dragon Design",
+        description:
+            "A powerful dragon tattoo featuring intricate scales and dynamic movement, crafted with precision shading.",
+    },
+    {
+        image: "/images/portfolio/frsnchise.png",
+        text: "Franchise Piece",
+        description:
+            "Bold artistic expression with clean lines and creative composition, representing personal style and identity.",
+    },
+    {
+        image: "/images/portfolio/luvers.png",
+        text: "Lovers Art",
+        description:
+            "An emotional piece capturing connection and intimacy through flowing artistic design and subtle color gradients.",
+    },
+    {
+        image: "/images/portfolio/naruto.png",
+        text: "Naruto Tribute",
+        description:
+            "A dynamic anime-inspired tattoo featuring the legendary ninja, showcasing vibrant colors and action-packed composition.",
+    },
+];
+
+// Try to fetch portfolio images from database
+let portfolioData = defaultPortfolioData;
+
+try {
+    const { data: portfolioImages } = await supabase
+        .from("content_images")
+        .select("*")
+        .eq("category", "portfolio")
+        .order("display_order", { ascending: true });
+
+    if (portfolioImages && portfolioImages.length > 0) {
+        portfolioData = portfolioImages.map((img: any) => ({
+            image: img.url,
+            text: img.title || "Artwork",
+            description: img.description || "",
+        }));
+    }
+} catch (error) {
+    console.error("Error fetching portfolio images:", error);
+    // Fall back to default portfolio data
+}
+---
+
+<Layout title="Portfolio">
+    <div class="container mx-auto px-4 py-12">
+        <h1 class="text-5xl font-bold text-center mb-12 font-doto">
+            Portfolio
+        </h1>
+
+        <!-- Circular Gallery Container -->
+        <div id="gallery-container" class="gallery-wrapper">
+            <CircularGallery
+                client:only="react"
+                items={portfolioData}
+                bend={2.5}
+                textColor="#ffffff"
+                borderRadius={0.08}
+                font="bold 28px Doto"
+                scrollSpeed={2}
+                scrollEase={0.07}
+            />
+            <div class="gallery-instructions">Scroll or drag to explore</div>
+        </div>
+    </div>
+
+    <!-- Modal for Portfolio Details -->
+    <dialog
+        id="portfolio-modal"
+        class="backdrop:bg-black/80 rounded-lg p-0 bg-background max-w-4xl w-full max-h-[90vh]"
+    >
+        <div class="relative">
+            <button
+                id="close-modal"
+                class="absolute top-4 right-4 z-10 p-2 bg-black/50 text-white rounded-full hover:bg-black/70 transition-colors"
+                >✕</button
+            >
+            <div class="grid md:grid-cols-2">
+                <div class="bg-black flex items-center justify-center">
+                    <img
+                        id="modal-image"
+                        src=""
+                        alt=""
+                        class="max-h-[60vh] md:max-h-full w-auto object-contain"
+                    />
+                </div>
+                <div class="p-8">
+                    <h2
+                        id="modal-title"
+                        class="text-2xl font-bold mb-4 font-doto"
+                    >
+                    </h2>
+                    <p id="modal-desc" class="text-muted-foreground"></p>
+                </div>
+            </div>
+        </div>
+    </dialog>
+</Layout>
+
+<script>
+    // Modal functionality
+    document.addEventListener("DOMContentLoaded", () => {
+        const modal = document.getElementById(
+            "portfolio-modal",
+        ) as HTMLDialogElement;
+        const closeBtn = document.getElementById("close-modal");
+        const modalImg = document.getElementById(
+            "modal-image",
+        ) as HTMLImageElement;
+        const modalTitle = document.getElementById("modal-title");
+        const modalDesc = document.getElementById("modal-desc");
+
+        // Close modal on button click
+        closeBtn?.addEventListener("click", () => modal.close());
+
+        // Close on backdrop click
+        modal.addEventListener("click", (e) => {
+            const rect = modal.getBoundingClientRect();
+            if (
+                e.clientX < rect.left ||
+                e.clientX > rect.right ||
+                e.clientY < rect.top ||
+                e.clientY > rect.bottom
+            ) {
+                modal.close();
+            }
+        });
+
+        // Close on Escape key
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "Escape" && modal.open) {
+                modal.close();
+            }
+        });
+
+        // Listen for custom event from gallery items
+        window.addEventListener("openPortfolioModal", ((e: CustomEvent) => {
+            const { image, text, description } = e.detail;
+            if (modalImg) modalImg.src = image || "";
+            if (modalTitle) modalTitle.textContent = text || "";
+            if (modalDesc) modalDesc.textContent = description || "";
+            modal.showModal();
+        }) as EventListener);
+    });
+</script>
+
+<style>
+    .gallery-wrapper {
+        position: relative;
+        height: 80vh;
+        min-height: 500px;
+        width: 100%;
+    }
+
+    .gallery-wrapper :global(.circular-gallery) {
+        width: 100%;
+        height: 100%;
+    }
+</style>

@@ -1,0 +1,4359 @@
+﻿--- astro.config.mjs
+
+import { defineConfig } from 'astro/config';
+import tailwind from '@astrojs/tailwind';
+import react from '@astrojs/react';
+
+// https://astro.build/config
+export default defineConfig({
+  integrations: [
+    tailwind({
+      applyBaseStyles: true,
+      nesting: true,
+    }),
+    react()
+  ],
+  output: 'static',
+  vite: {
+    css: {
+      devSourcemap: true
+    }
+  }
+});
+
+--- postcss.config.cjs
+
+module.exports = {
+    plugins: {
+        tailwindcss: {},
+        autoprefixer: {},
+    },
+};
+
+
+--- README.md
+
+# Astro Starter Kit: Minimal
+
+```sh
+pnpm create astro@latest -- --template minimal
+```
+
+> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+
+## 🚀 Project Structure
+
+Inside of your Astro project, you'll see the following folders and files:
+
+```text
+/
+├── public/
+├── src/
+│   └── pages/
+│       └── index.astro
+└── package.json
+```
+
+Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
+
+There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
+
+Any static assets, like images, can be placed in the `public/` directory.
+
+## 🧞 Commands
+
+All commands are run from the root of the project, from a terminal:
+
+| Command                   | Action                                           |
+| :------------------------ | :----------------------------------------------- |
+| `pnpm install`             | Installs dependencies                            |
+| `pnpm dev`             | Starts local dev server at `localhost:4321`      |
+| `pnpm build`           | Build your production site to `./dist/`          |
+| `pnpm preview`         | Preview your build locally, before deploying     |
+| `pnpm astro ...`       | Run CLI commands like `astro add`, `astro check` |
+| `pnpm astro -- --help` | Get help using the Astro CLI                     |
+
+## 👀 Want to learn more?
+
+Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+
+
+--- tailwind.config.mjs
+
+/** @type {import('tailwindcss').Config} */
+export default {
+  darkMode: 'class',
+  content: [
+    './src/**/*.{astro,html,js,jsx,md,mdx,svelte,ts,tsx,vue}',
+    './public/**/*.html',
+  ],
+  safelist: [
+    'hidden',
+    'dark',
+    'bg-background',
+    'text-foreground',
+    'bg-card',
+    'text-card-foreground',
+    'border-border',
+    'font-playfair',
+    'font-doto',
+    'font-inter',
+    'font-pacifico',
+    'font-great-vibes',
+  ],
+  theme: {
+    extend: {
+      colors: {
+        border: 'hsl(var(--border))',
+        input: 'hsl(var(--input))',
+        ring: 'hsl(var(--ring))',
+        background: 'hsl(var(--background))',
+        foreground: 'hsl(var(--foreground))',
+        primary: {
+          DEFAULT: 'hsl(var(--primary))',
+          foreground: 'hsl(var(--primary-foreground))',
+        },
+        secondary: {
+          DEFAULT: 'hsl(var(--secondary))',
+          foreground: 'hsl(var(--secondary-foreground))',
+        },
+        destructive: {
+          DEFAULT: 'hsl(var(--destructive))',
+          foreground: 'hsl(var(--destructive-foreground))',
+        },
+        muted: {
+          DEFAULT: 'hsl(var(--muted))',
+          foreground: 'hsl(var(--muted-foreground))',
+        },
+        accent: {
+          DEFAULT: 'hsl(var(--accent))',
+          foreground: 'hsl(var(--accent-foreground))',
+        },
+        popover: {
+          DEFAULT: 'hsl(var(--popover))',
+          foreground: 'hsl(var(--popover-foreground))',
+        },
+        card: {
+          DEFAULT: 'hsl(var(--card))',
+          foreground: 'hsl(var(--card-foreground))',
+        },
+      },
+      fontFamily: {
+        playfair: ['"Playfair Display"', 'serif'],
+        inter: ['Inter', 'system-ui', 'sans-serif'],
+        doto: ['"Doto"', 'sans-serif'],
+        pacifico: ['Pacifico', 'cursive'],
+        'great-vibes': ['"Great Vibes"', 'cursive'],
+      },
+    },
+  },
+  plugins: [],
+};
+
+
+--- tsconfig.json
+
+{
+  "extends": "astro/tsconfigs/strict",
+  "include": [".astro/types.d.ts", "**/*"],
+  "exclude": ["dist"]
+}
+
+
+--- .astro\content-assets.mjs
+
+export default new Map();
+
+--- .astro\content-modules.mjs
+
+export default new Map();
+
+--- .astro\content.d.ts
+
+declare module 'astro:content' {
+	export interface RenderResult {
+		Content: import('astro/runtime/server/index.js').AstroComponentFactory;
+		headings: import('astro').MarkdownHeading[];
+		remarkPluginFrontmatter: Record<string, any>;
+	}
+	interface Render {
+		'.md': Promise<RenderResult>;
+	}
+
+	export interface RenderedContent {
+		html: string;
+		metadata?: {
+			imagePaths: Array<string>;
+			[key: string]: unknown;
+		};
+	}
+}
+
+declare module 'astro:content' {
+	type Flatten<T> = T extends { [K: string]: infer U } ? U : never;
+
+	export type CollectionKey = keyof AnyEntryMap;
+	export type CollectionEntry<C extends CollectionKey> = Flatten<AnyEntryMap[C]>;
+
+	export type ContentCollectionKey = keyof ContentEntryMap;
+	export type DataCollectionKey = keyof DataEntryMap;
+
+	type AllValuesOf<T> = T extends any ? T[keyof T] : never;
+	type ValidContentEntrySlug<C extends keyof ContentEntryMap> = AllValuesOf<
+		ContentEntryMap[C]
+	>['slug'];
+
+	export type ReferenceDataEntry<
+		C extends CollectionKey,
+		E extends keyof DataEntryMap[C] = string,
+	> = {
+		collection: C;
+		id: E;
+	};
+	export type ReferenceContentEntry<
+		C extends keyof ContentEntryMap,
+		E extends ValidContentEntrySlug<C> | (string & {}) = string,
+	> = {
+		collection: C;
+		slug: E;
+	};
+	export type ReferenceLiveEntry<C extends keyof LiveContentConfig['collections']> = {
+		collection: C;
+		id: string;
+	};
+
+	/** @deprecated Use `getEntry` instead. */
+	export function getEntryBySlug<
+		C extends keyof ContentEntryMap,
+		E extends ValidContentEntrySlug<C> | (string & {}),
+	>(
+		collection: C,
+		// Note that this has to accept a regular string too, for SSR
+		entrySlug: E,
+	): E extends ValidContentEntrySlug<C>
+		? Promise<CollectionEntry<C>>
+		: Promise<CollectionEntry<C> | undefined>;
+
+	/** @deprecated Use `getEntry` instead. */
+	export function getDataEntryById<C extends keyof DataEntryMap, E extends keyof DataEntryMap[C]>(
+		collection: C,
+		entryId: E,
+	): Promise<CollectionEntry<C>>;
+
+	export function getCollection<C extends keyof AnyEntryMap, E extends CollectionEntry<C>>(
+		collection: C,
+		filter?: (entry: CollectionEntry<C>) => entry is E,
+	): Promise<E[]>;
+	export function getCollection<C extends keyof AnyEntryMap>(
+		collection: C,
+		filter?: (entry: CollectionEntry<C>) => unknown,
+	): Promise<CollectionEntry<C>[]>;
+
+	export function getLiveCollection<C extends keyof LiveContentConfig['collections']>(
+		collection: C,
+		filter?: LiveLoaderCollectionFilterType<C>,
+	): Promise<
+		import('astro').LiveDataCollectionResult<LiveLoaderDataType<C>, LiveLoaderErrorType<C>>
+	>;
+
+	export function getEntry<
+		C extends keyof ContentEntryMap,
+		E extends ValidContentEntrySlug<C> | (string & {}),
+	>(
+		entry: ReferenceContentEntry<C, E>,
+	): E extends ValidContentEntrySlug<C>
+		? Promise<CollectionEntry<C>>
+		: Promise<CollectionEntry<C> | undefined>;
+	export function getEntry<
+		C extends keyof DataEntryMap,
+		E extends keyof DataEntryMap[C] | (string & {}),
+	>(
+		entry: ReferenceDataEntry<C, E>,
+	): E extends keyof DataEntryMap[C]
+		? Promise<DataEntryMap[C][E]>
+		: Promise<CollectionEntry<C> | undefined>;
+	export function getEntry<
+		C extends keyof ContentEntryMap,
+		E extends ValidContentEntrySlug<C> | (string & {}),
+	>(
+		collection: C,
+		slug: E,
+	): E extends ValidContentEntrySlug<C>
+		? Promise<CollectionEntry<C>>
+		: Promise<CollectionEntry<C> | undefined>;
+	export function getEntry<
+		C extends keyof DataEntryMap,
+		E extends keyof DataEntryMap[C] | (string & {}),
+	>(
+		collection: C,
+		id: E,
+	): E extends keyof DataEntryMap[C]
+		? string extends keyof DataEntryMap[C]
+			? Promise<DataEntryMap[C][E]> | undefined
+			: Promise<DataEntryMap[C][E]>
+		: Promise<CollectionEntry<C> | undefined>;
+	export function getLiveEntry<C extends keyof LiveContentConfig['collections']>(
+		collection: C,
+		filter: string | LiveLoaderEntryFilterType<C>,
+	): Promise<import('astro').LiveDataEntryResult<LiveLoaderDataType<C>, LiveLoaderErrorType<C>>>;
+
+	/** Resolve an array of entry references from the same collection */
+	export function getEntries<C extends keyof ContentEntryMap>(
+		entries: ReferenceContentEntry<C, ValidContentEntrySlug<C>>[],
+	): Promise<CollectionEntry<C>[]>;
+	export function getEntries<C extends keyof DataEntryMap>(
+		entries: ReferenceDataEntry<C, keyof DataEntryMap[C]>[],
+	): Promise<CollectionEntry<C>[]>;
+
+	export function render<C extends keyof AnyEntryMap>(
+		entry: AnyEntryMap[C][string],
+	): Promise<RenderResult>;
+
+	export function reference<C extends keyof AnyEntryMap>(
+		collection: C,
+	): import('astro/zod').ZodEffects<
+		import('astro/zod').ZodString,
+		C extends keyof ContentEntryMap
+			? ReferenceContentEntry<C, ValidContentEntrySlug<C>>
+			: ReferenceDataEntry<C, keyof DataEntryMap[C]>
+	>;
+	// Allow generic `string` to avoid excessive type errors in the config
+	// if `dev` is not running to update as you edit.
+	// Invalid collection names will be caught at build time.
+	export function reference<C extends string>(
+		collection: C,
+	): import('astro/zod').ZodEffects<import('astro/zod').ZodString, never>;
+
+	type ReturnTypeOrOriginal<T> = T extends (...args: any[]) => infer R ? R : T;
+	type InferEntrySchema<C extends keyof AnyEntryMap> = import('astro/zod').infer<
+		ReturnTypeOrOriginal<Required<ContentConfig['collections'][C]>['schema']>
+	>;
+
+	type ContentEntryMap = {
+		
+	};
+
+	type DataEntryMap = {
+		
+	};
+
+	type AnyEntryMap = ContentEntryMap & DataEntryMap;
+
+	type ExtractLoaderTypes<T> = T extends import('astro/loaders').LiveLoader<
+		infer TData,
+		infer TEntryFilter,
+		infer TCollectionFilter,
+		infer TError
+	>
+		? { data: TData; entryFilter: TEntryFilter; collectionFilter: TCollectionFilter; error: TError }
+		: { data: never; entryFilter: never; collectionFilter: never; error: never };
+	type ExtractDataType<T> = ExtractLoaderTypes<T>['data'];
+	type ExtractEntryFilterType<T> = ExtractLoaderTypes<T>['entryFilter'];
+	type ExtractCollectionFilterType<T> = ExtractLoaderTypes<T>['collectionFilter'];
+	type ExtractErrorType<T> = ExtractLoaderTypes<T>['error'];
+
+	type LiveLoaderDataType<C extends keyof LiveContentConfig['collections']> =
+		LiveContentConfig['collections'][C]['schema'] extends undefined
+			? ExtractDataType<LiveContentConfig['collections'][C]['loader']>
+			: import('astro/zod').infer<
+					Exclude<LiveContentConfig['collections'][C]['schema'], undefined>
+				>;
+	type LiveLoaderEntryFilterType<C extends keyof LiveContentConfig['collections']> =
+		ExtractEntryFilterType<LiveContentConfig['collections'][C]['loader']>;
+	type LiveLoaderCollectionFilterType<C extends keyof LiveContentConfig['collections']> =
+		ExtractCollectionFilterType<LiveContentConfig['collections'][C]['loader']>;
+	type LiveLoaderErrorType<C extends keyof LiveContentConfig['collections']> = ExtractErrorType<
+		LiveContentConfig['collections'][C]['loader']
+	>;
+
+	export type ContentConfig = typeof import("./../src/content.config.mjs");
+	export type LiveContentConfig = never;
+}
+
+
+--- .astro\data-store.json
+
+[["Map",1,2],"meta::meta",["Map",3,4,5,6],"astro-version","5.16.5","astro-config-digest","{\"root\":{},\"srcDir\":{},\"publicDir\":{},\"outDir\":{},\"cacheDir\":{},\"compressHTML\":true,\"base\":\"/\",\"trailingSlash\":\"ignore\",\"output\":\"static\",\"scopedStyleStrategy\":\"attribute\",\"build\":{\"format\":\"directory\",\"client\":{},\"server\":{},\"assets\":\"_astro\",\"serverEntry\":\"entry.mjs\",\"redirects\":true,\"inlineStylesheets\":\"auto\",\"concurrency\":1},\"server\":{\"open\":false,\"host\":false,\"port\":4321,\"streaming\":true,\"allowedHosts\":[]},\"redirects\":{},\"image\":{\"endpoint\":{\"route\":\"/_image\"},\"service\":{\"entrypoint\":\"astro/assets/services/sharp\",\"config\":{}},\"domains\":[],\"remotePatterns\":[],\"responsiveStyles\":false},\"devToolbar\":{\"enabled\":true},\"markdown\":{\"syntaxHighlight\":{\"type\":\"shiki\",\"excludeLangs\":[\"math\"]},\"shikiConfig\":{\"langs\":[],\"langAlias\":{},\"theme\":\"github-dark\",\"themes\":{},\"wrap\":false,\"transformers\":[]},\"remarkPlugins\":[],\"rehypePlugins\":[],\"remarkRehype\":{},\"gfm\":true,\"smartypants\":true},\"security\":{\"checkOrigin\":true,\"allowedDomains\":[]},\"env\":{\"schema\":{},\"validateSecrets\":false},\"experimental\":{\"clientPrerender\":false,\"contentIntellisense\":false,\"headingIdCompat\":false,\"preserveScriptOrder\":false,\"liveContentCollections\":false,\"csp\":false,\"staticImportMetaEnv\":false,\"chromeDevtoolsWorkspace\":false,\"failOnPrerenderConflict\":false,\"svgo\":false},\"legacy\":{\"collections\":false}}"]
+
+--- .astro\settings.json
+
+{
+	"_variables": {
+		"lastUpdateCheck": 1765825633006
+	}
+}
+
+--- .astro\types.d.ts
+
+/// <reference types="astro/client" />
+
+
+--- src\components\BookingModal.astro
+
+---
+// BookingModal.astro - Global booking modal component
+---
+
+<dialog id="booking-modal" class="booking-modal">
+    <div class="booking-modal-content">
+        <!-- Close Button -->
+        <button
+            id="booking-modal-close"
+            class="booking-modal-close"
+            aria-label="Close booking modal"
+        >
+            <svg
+                class="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+            >
+                <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        </button>
+
+        <!-- Initial Choice Step -->
+        <div id="booking-choice" class="booking-choice">
+            <h2 class="text-2xl font-bold mb-2 font-doto">Book Your Tattoo</h2>
+            <p class="text-muted-foreground text-sm mb-6">
+                Choose an option to get started
+            </p>
+
+            <div class="choice-grid">
+                <button id="choice-custom" class="choice-card">
+                    <h3 class="text-lg font-semibold mb-2">
+                        Request a Custom Tattoo
+                    </h3>
+                    <p class="text-sm text-muted-foreground">
+                        Work with our artists to create a unique design
+                    </p>
+                </button>
+
+                <button id="choice-flash" class="choice-card">
+                    <h3 class="text-lg font-semibold mb-2">
+                        Shop Flash Designs
+                    </h3>
+                    <p class="text-sm text-muted-foreground">
+                        Browse our collection of ready-to-ink designs
+                    </p>
+                </button>
+            </div>
+        </div>
+
+        <!-- Custom Tattoo Form (Hidden Initially) -->
+        <div id="booking-form-container" class="hidden">
+            <!-- Progress Indicator -->
+            <div class="booking-progress">
+                <div class="progress-step active" data-progress="1">1</div>
+                <div class="progress-line"></div>
+                <div class="progress-step" data-progress="2">2</div>
+                <div class="progress-line"></div>
+                <div class="progress-step" data-progress="3">3</div>
+                <div class="progress-line"></div>
+                <div class="progress-step" data-progress="4">4</div>
+            </div>
+
+            <h2 class="text-2xl font-bold mb-6 text-center font-doto">
+                Booking Request
+            </h2>
+
+            <form id="booking-form" class="booking-form">
+                <!-- Step 1: Idea -->
+                <div class="form-step active" data-step="1">
+                    <h3 class="text-xl mb-4 font-doto">
+                        What's your tattoo idea?
+                    </h3>
+                    <p class="text-muted-foreground text-sm mb-4">
+                        Tell us about your vision. Be as detailed as you'd like!
+                    </p>
+                    <textarea
+                        name="idea"
+                        class="w-full p-4 border rounded-md bg-background text-foreground resize-none"
+                        rows="5"
+                        placeholder="Describe your dream tattoo..."
+                        required></textarea>
+                    <div class="flex justify-between mt-6">
+                        <button
+                            type="button"
+                            class="btn-back-to-choice border border-foreground/20 px-6 py-2 rounded hover:bg-muted transition-colors"
+                        >
+                            <svg
+                                class="inline-block w-4 h-4 mr-1"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M15 19l-7-7 7-7"></path>
+                            </svg>
+                            Back
+                        </button>
+                        <button
+                            type="button"
+                            class="btn-next bg-primary text-primary-foreground px-6 py-2 rounded hover:opacity-90 transition-opacity"
+                        >
+                            Next
+                            <svg
+                                class="inline-block w-4 h-4 ml-1"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M9 5l7 7-7 7"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 2: Placement & Size -->
+                <div class="form-step" data-step="2">
+                    <h3 class="text-xl mb-4 font-doto">Placement & Size</h3>
+                    <p class="text-muted-foreground text-sm mb-4">
+                        Where would you like your tattoo and how big?
+                    </p>
+                    <div class="grid gap-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2"
+                                >Placement</label
+                            >
+                            <input
+                                type="text"
+                                name="placement"
+                                placeholder="e.g., Forearm, Shoulder, Back"
+                                class="w-full p-3 border rounded bg-background text-foreground"
+                                required
+                            />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2"
+                                >Size</label
+                            >
+                            <select
+                                name="size"
+                                class="w-full p-3 border rounded bg-background text-foreground"
+                                required
+                            >
+                                <option value="">Select Size</option>
+                                <option value="1-2 inches"
+                                    >1-2 inches (Small)</option
+                                >
+                                <option value="3-5 inches"
+                                    >3-5 inches (Medium)</option
+                                >
+                                <option value="6+ inches"
+                                    >6+ inches (Large)</option
+                                >
+                            </select>
+                        </div>
+                    </div>
+                    <div class="flex justify-between mt-6">
+                        <button
+                            type="button"
+                            class="btn-prev border border-foreground/20 px-6 py-2 rounded hover:bg-muted transition-colors"
+                        >
+                            <svg
+                                class="inline-block w-4 h-4 mr-1"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M15 19l-7-7 7-7"></path>
+                            </svg>
+                            Back
+                        </button>
+                        <button
+                            type="button"
+                            class="btn-next bg-primary text-primary-foreground px-6 py-2 rounded hover:opacity-90 transition-opacity"
+                        >
+                            Next
+                            <svg
+                                class="inline-block w-4 h-4 ml-1"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M9 5l7 7-7 7"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 3: Reference Photos -->
+                <div class="form-step" data-step="3">
+                    <h3 class="text-xl mb-4 font-doto">Reference Photos</h3>
+                    <p class="text-muted-foreground text-sm mb-4">
+                        Upload any inspiration images (optional but helpful!)
+                    </p>
+                    <div class="upload-area">
+                        <input
+                            type="file"
+                            id="ref-photos"
+                            multiple
+                            accept="image/*"
+                            class="hidden"
+                        />
+                        <label for="ref-photos" class="upload-label">
+                            <svg
+                                class="w-12 h-12 mx-auto mb-3 text-muted-foreground"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="1.5"
+                                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                                ></path>
+                            </svg>
+                            <span class="text-muted-foreground"
+                                >Click to upload or drag and drop</span
+                            >
+                            <span
+                                class="text-xs text-muted-foreground mt-1 block"
+                                >PNG, JPG up to 10MB each</span
+                            >
+                        </label>
+                        <div id="file-preview" class="file-preview mt-4"></div>
+                    </div>
+                    <div class="flex justify-between mt-6">
+                        <button
+                            type="button"
+                            class="btn-prev border border-foreground/20 px-6 py-2 rounded hover:bg-muted transition-colors"
+                        >
+                            <svg
+                                class="inline-block w-4 h-4 mr-1"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M15 19l-7-7 7-7"></path>
+                            </svg>
+                            Back
+                        </button>
+                        <button
+                            type="button"
+                            class="btn-next bg-primary text-primary-foreground px-6 py-2 rounded hover:opacity-90 transition-opacity"
+                        >
+                            Next
+                            <svg
+                                class="inline-block w-4 h-4 ml-1"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M9 5l7 7-7 7"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 4: Contact Info -->
+                <div class="form-step" data-step="4">
+                    <h3 class="text-xl mb-4 font-doto">Your Details</h3>
+                    <p class="text-muted-foreground text-sm mb-4">
+                        How can we reach you?
+                    </p>
+                    <div class="grid gap-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-2"
+                                    >First Name</label
+                                >
+                                <input
+                                    type="text"
+                                    name="first_name"
+                                    placeholder="John"
+                                    class="w-full p-3 border rounded bg-background text-foreground"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2"
+                                    >Last Name</label
+                                >
+                                <input
+                                    type="text"
+                                    name="last_name"
+                                    placeholder="Doe"
+                                    class="w-full p-3 border rounded bg-background text-foreground"
+                                    required
+                                />
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2"
+                                >Email</label
+                            >
+                            <input
+                                type="email"
+                                name="email"
+                                placeholder="john@example.com"
+                                class="w-full p-3 border rounded bg-background text-foreground"
+                                required
+                            />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2"
+                                >Phone</label
+                            >
+                            <input
+                                type="tel"
+                                name="phone"
+                                placeholder="(123) 456-7890"
+                                class="w-full p-3 border rounded bg-background text-foreground"
+                                required
+                            />
+                        </div>
+                    </div>
+                    <div class="flex justify-between mt-6">
+                        <button
+                            type="button"
+                            class="btn-prev border border-foreground/20 px-6 py-2 rounded hover:bg-muted transition-colors"
+                        >
+                            <svg
+                                class="inline-block w-4 h-4 mr-1"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M15 19l-7-7 7-7"></path>
+                            </svg>
+                            Back
+                        </button>
+                        <button
+                            type="submit"
+                            class="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 transition-colors"
+                        >
+                            Submit Request
+                            <svg
+                                class="inline-block w-4 h-4 ml-1"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M5 13l4 4L19 7"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+            <!-- Loading State -->
+            <div id="booking-loading" class="booking-state hidden">
+                <div class="loading-spinner"></div>
+                <p class="mt-4 text-lg">Submitting your request...</p>
+            </div>
+
+            <!-- Success State -->
+            <div id="booking-success" class="booking-state hidden">
+                <div class="success-icon">
+                    <svg
+                        class="w-16 h-16 text-green-500"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                        ></path>
+                    </svg>
+                </div>
+                <h3 class="text-2xl font-bold mt-4 font-doto">Booking Sent!</h3>
+                <p class="text-muted-foreground mt-2">
+                    We'll get back to you within 24-48 hours.
+                </p>
+                <button
+                    id="booking-done"
+                    class="mt-6 bg-primary text-primary-foreground px-6 py-2 rounded hover:opacity-90 transition-opacity"
+                >
+                    Done
+                </button>
+            </div>
+        </div>
+    </div>
+</dialog>
+
+<style>
+    .booking-modal {
+        position: fixed;
+        max-width: 540px;
+        width: 90%;
+        max-height: 90vh;
+        overflow-y: auto;
+        padding: 0;
+        border: none;
+        border-radius: var(--radius);
+        background: hsl(var(--background));
+        color: hsl(var(--foreground));
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+
+    .booking-modal::backdrop {
+        background-color: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(4px);
+    }
+
+    .booking-modal[open] {
+        animation: modalSlideIn 0.3s ease-out;
+    }
+
+    @keyframes modalSlideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-20px) scale(0.95);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    .booking-modal-content {
+        position: relative;
+        padding: 2rem;
+    }
+
+    .booking-modal-close {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        padding: 0.5rem;
+        border-radius: 50%;
+        background: hsl(var(--muted));
+        color: hsl(var(--foreground));
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        z-index: 10;
+    }
+
+    .booking-modal-close:hover {
+        background: hsl(var(--accent));
+        transform: scale(1.1);
+    }
+
+    /* Initial Choice Step */
+    .booking-choice {
+        animation: fadeIn 0.3s ease-out;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
+    }
+
+    .choice-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+    }
+
+    .choice-card {
+        padding: 1.5rem;
+        border: 1px solid hsl(var(--border));
+        border-radius: var(--radius);
+        background: hsl(var(--muted));
+        cursor: pointer;
+        text-align: left;
+        transition: all 0.2s ease;
+    }
+
+    .choice-card:hover {
+        border-color: hsl(var(--primary));
+        background: hsl(var(--muted) / 0.8);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .choice-card h3 {
+        color: hsl(var(--foreground));
+    }
+
+    /* Progress Indicator */
+    .booking-progress {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1.5rem;
+        gap: 0;
+    }
+
+    .progress-step {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: hsl(var(--muted));
+        color: hsl(var(--muted-foreground));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.875rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .progress-step.active {
+        background: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
+        transform: scale(1.1);
+    }
+
+    .progress-step.completed {
+        background: hsl(142 76% 36%);
+        color: white;
+    }
+
+    .progress-line {
+        width: 40px;
+        height: 3px;
+        background: hsl(var(--muted));
+        transition: background 0.3s ease;
+    }
+
+    .progress-line.active {
+        background: hsl(var(--primary));
+    }
+
+    /* Form Steps */
+    .form-step {
+        display: none;
+        animation: stepFadeIn 0.3s ease-out;
+    }
+
+    .form-step.active {
+        display: block;
+    }
+
+    @keyframes stepFadeIn {
+        from {
+            opacity: 0;
+            transform: translateX(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    /* Upload Area */
+    .upload-area {
+        border: 2px dashed hsl(var(--border));
+        border-radius: var(--radius);
+        padding: 2rem;
+        text-align: center;
+        transition: all 0.2s ease;
+    }
+
+    .upload-area:hover {
+        border-color: hsl(var(--primary));
+        background: hsl(var(--muted) / 0.5);
+    }
+
+    .upload-label {
+        cursor: pointer;
+        display: block;
+    }
+
+    .file-preview {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        justify-content: center;
+    }
+
+    .file-preview-item {
+        position: relative;
+        width: 60px;
+        height: 60px;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .file-preview-item img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .file-preview-item .remove-file {
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        width: 18px;
+        height: 18px;
+        background: rgba(0, 0, 0, 0.6);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        cursor: pointer;
+        font-size: 12px;
+        line-height: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* States */
+    .booking-state {
+        text-align: center;
+        padding: 2rem;
+    }
+
+    .booking-state.hidden {
+        display: none;
+    }
+
+    .loading-spinner {
+        width: 48px;
+        height: 48px;
+        border: 4px solid hsl(var(--muted));
+        border-top-color: hsl(var(--primary));
+        border-radius: 50%;
+        margin: 0 auto;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    .success-icon {
+        animation: successPop 0.4s ease-out;
+    }
+
+    @keyframes successPop {
+        0% {
+            transform: scale(0);
+        }
+        50% {
+            transform: scale(1.2);
+        }
+        100% {
+            transform: scale(1);
+        }
+    }
+
+    .hidden {
+        display: none !important;
+    }
+
+    /* Mobile responsiveness */
+    @media (max-width: 640px) {
+        .booking-modal-content {
+            padding: 1.5rem;
+        }
+
+        .booking-progress {
+            transform: scale(0.9);
+        }
+
+        .progress-line {
+            width: 24px;
+        }
+
+        .form-step .grid-cols-2 {
+            grid-template-columns: 1fr;
+        }
+
+        .choice-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<script>
+    import { supabase } from "../lib/supabase";
+
+    document.addEventListener("DOMContentLoaded", () => {
+        const modal = document.getElementById(
+            "booking-modal",
+        ) as HTMLDialogElement;
+        const closeBtn = document.getElementById("booking-modal-close");
+        const doneBtn = document.getElementById("booking-done");
+        const form = document.getElementById("booking-form") as HTMLFormElement;
+        const loadingEl = document.getElementById("booking-loading");
+        const successEl = document.getElementById("booking-success");
+        const fileInput = document.getElementById(
+            "ref-photos",
+        ) as HTMLInputElement;
+        const filePreview = document.getElementById("file-preview");
+
+        // Choice elements
+        const bookingChoice = document.getElementById("booking-choice");
+        const bookingFormContainer = document.getElementById(
+            "booking-form-container",
+        );
+        const choiceCustom = document.getElementById("choice-custom");
+        const choiceFlash = document.getElementById("choice-flash");
+        const backToChoiceBtn = document.querySelector(".btn-back-to-choice");
+
+        let currentStep = 1;
+        const totalSteps = 4;
+        let selectedFiles: File[] = [];
+
+        // Listen for custom event to open modal
+        window.addEventListener("openBookingModal", () => {
+            if (modal) {
+                modal.showModal();
+
+                // Check if there's a pre-selected flash design
+                const savedDesign = sessionStorage.getItem(
+                    "selectedFlashDesign",
+                );
+                if (savedDesign) {
+                    try {
+                        const design = JSON.parse(savedDesign);
+                        // Pre-populate form with flash design info
+                        const ideaField = form?.querySelector(
+                            '[name="idea"]',
+                        ) as HTMLTextAreaElement;
+                        const sizeField = form?.querySelector(
+                            '[name="size"]',
+                        ) as HTMLSelectElement;
+
+                        if (ideaField) {
+                            ideaField.value = `Flash Design: ${design.text}\n\n${design.description}\n\nPrice: $${design.price}`;
+                        }
+
+                        // Try to match size
+                        if (sizeField && design.size) {
+                            if (
+                                design.size.includes("1-2") ||
+                                design.size.includes("2-3")
+                            ) {
+                                sizeField.value = "1-2 inches";
+                            } else if (
+                                design.size.includes("3-4") ||
+                                design.size.includes("4-5")
+                            ) {
+                                sizeField.value = "3-5 inches";
+                            } else if (
+                                design.size.includes("5-6") ||
+                                design.size.includes("6+")
+                            ) {
+                                sizeField.value = "6+ inches";
+                            }
+                        }
+
+                        // Clear the stored design
+                        sessionStorage.removeItem("selectedFlashDesign");
+
+                        // Skip to custom form directly
+                        showCustomForm();
+                        return;
+                    } catch (e) {
+                        console.error("Error parsing flash design:", e);
+                        sessionStorage.removeItem("selectedFlashDesign");
+                    }
+                }
+
+                resetToChoice();
+            }
+        });
+
+        // Choice handlers
+        choiceCustom?.addEventListener("click", () => {
+            showCustomForm();
+        });
+
+        choiceFlash?.addEventListener("click", () => {
+            // Navigate to flash designs page
+            modal?.close();
+            window.location.href = "/flash-designs";
+        });
+
+        // Back to choice from step 1
+        backToChoiceBtn?.addEventListener("click", () => {
+            showChoice();
+        });
+
+        function showCustomForm() {
+            bookingChoice?.classList.add("hidden");
+            bookingFormContainer?.classList.remove("hidden");
+            currentStep = 1;
+            showStep(currentStep);
+        }
+
+        function showChoice() {
+            bookingFormContainer?.classList.add("hidden");
+            bookingChoice?.classList.remove("hidden");
+        }
+
+        function resetToChoice() {
+            currentStep = 1;
+            selectedFiles = [];
+            form?.reset();
+            form?.classList.remove("hidden");
+            loadingEl?.classList.add("hidden");
+            successEl?.classList.add("hidden");
+            if (filePreview) filePreview.innerHTML = "";
+            showStep(1);
+            showChoice();
+
+            // Remove any validation styling
+            document.querySelectorAll(".border-red-500").forEach((el) => {
+                el.classList.remove("border-red-500");
+            });
+        }
+
+        // Close modal handlers
+        closeBtn?.addEventListener("click", () => {
+            modal?.close();
+        });
+
+        doneBtn?.addEventListener("click", () => {
+            modal?.close();
+            resetToChoice();
+        });
+
+        // Close on backdrop click
+        modal?.addEventListener("click", (e) => {
+            if (e.target === modal) {
+                modal.close();
+            }
+        });
+
+        // Close on Escape key
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "Escape" && modal?.open) {
+                modal.close();
+            }
+        });
+
+        // Step Navigation
+        function updateProgress() {
+            const progressSteps = document.querySelectorAll(".progress-step");
+            const progressLines = document.querySelectorAll(".progress-line");
+
+            progressSteps.forEach((step, index) => {
+                const stepNum = index + 1;
+                step.classList.remove("active", "completed");
+
+                if (stepNum < currentStep) {
+                    step.classList.add("completed");
+                } else if (stepNum === currentStep) {
+                    step.classList.add("active");
+                }
+            });
+
+            progressLines.forEach((line, index) => {
+                line.classList.toggle("active", index < currentStep - 1);
+            });
+        }
+
+        function showStep(stepNum: number) {
+            const steps = document.querySelectorAll(".form-step");
+            steps.forEach((step) => {
+                step.classList.remove("active");
+                if (
+                    parseInt(step.getAttribute("data-step") || "0") === stepNum
+                ) {
+                    step.classList.add("active");
+                }
+            });
+            updateProgress();
+        }
+
+        function validateCurrentStep(): boolean {
+            const currentStepEl = document.querySelector(
+                `[data-step="${currentStep}"]`,
+            );
+            if (!currentStepEl) return true;
+
+            const requiredInputs = currentStepEl.querySelectorAll(
+                "[required]",
+            ) as NodeListOf<
+                HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+            >;
+            let valid = true;
+
+            requiredInputs.forEach((input) => {
+                if (!input.value.trim()) {
+                    valid = false;
+                    input.classList.add("border-red-500");
+                } else {
+                    input.classList.remove("border-red-500");
+                }
+            });
+
+            return valid;
+        }
+
+        // Next button handlers
+        document.querySelectorAll(".btn-next").forEach((btn) => {
+            btn.addEventListener("click", () => {
+                if (validateCurrentStep() && currentStep < totalSteps) {
+                    currentStep++;
+                    showStep(currentStep);
+                }
+            });
+        });
+
+        // Previous button handlers
+        document.querySelectorAll(".btn-prev").forEach((btn) => {
+            btn.addEventListener("click", () => {
+                if (currentStep > 1) {
+                    currentStep--;
+                    showStep(currentStep);
+                }
+            });
+        });
+
+        // File upload preview
+        fileInput?.addEventListener("change", () => {
+            if (fileInput.files) {
+                selectedFiles = Array.from(fileInput.files);
+                updateFilePreview();
+            }
+        });
+
+        function updateFilePreview() {
+            if (!filePreview) return;
+            filePreview.innerHTML = "";
+
+            selectedFiles.forEach((file, index) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const div = document.createElement("div");
+                    div.className = "file-preview-item";
+                    div.innerHTML = `
+            <img src="${e.target?.result}" alt="Preview ${index + 1}" />
+            <button type="button" class="remove-file" data-index="${index}">&times;</button>
+          `;
+                    filePreview.appendChild(div);
+
+                    // Add remove handler
+                    div.querySelector(".remove-file")?.addEventListener(
+                        "click",
+                        () => {
+                            selectedFiles.splice(index, 1);
+                            updateFilePreview();
+                        },
+                    );
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // Form submission
+        form?.addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            if (!validateCurrentStep()) return;
+
+            // Show loading state
+            form.classList.add("hidden");
+            loadingEl?.classList.remove("hidden");
+
+            const formData = new FormData(form);
+            const uploadedUrls: string[] = [];
+
+            try {
+                // Upload images
+                for (const file of selectedFiles) {
+                    const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, "")}`;
+                    const { data, error } = await supabase.storage
+                        .from("reference-photos")
+                        .upload(fileName, file);
+
+                    if (data && !error) {
+                        const {
+                            data: { publicUrl },
+                        } = supabase.storage
+                            .from("reference-photos")
+                            .getPublicUrl(fileName);
+                        uploadedUrls.push(publicUrl);
+                    }
+                }
+
+                // Insert booking
+                const { error } = await supabase.from("bookings").insert({
+                    first_name: formData.get("first_name"),
+                    last_name: formData.get("last_name"),
+                    email: formData.get("email"),
+                    phone: formData.get("phone"),
+                    tattoo_idea: formData.get("idea"),
+                    tattoo_placement: formData.get("placement"),
+                    tattoo_size: formData.get("size"),
+                    is_custom: true,
+                    reference_photos: uploadedUrls,
+                    status: "pending",
+                });
+
+                loadingEl?.classList.add("hidden");
+
+                if (!error) {
+                    successEl?.classList.remove("hidden");
+                } else {
+                    form.classList.remove("hidden");
+                    alert("Error submitting booking: " + error.message);
+                }
+            } catch (err) {
+                loadingEl?.classList.add("hidden");
+                form.classList.remove("hidden");
+                alert("An error occurred. Please try again.");
+            }
+        });
+    });
+</script>
+
+
+--- src\components\CircularGallery.jsx
+
+import { Camera, Mesh, Plane, Program, Renderer, Texture, Transform } from 'ogl';
+import { useEffect, useRef } from 'react';
+
+// Utility: Debounce function
+function debounce(func, wait) {
+    let timeout;
+    return function (...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), wait);
+    };
+}
+
+// Utility: Linear interpolation
+function lerp(p1, p2, t) {
+    return p1 + (p2 - p1) * t;
+}
+
+// Utility: Auto-bind methods to instance
+function autoBind(instance) {
+    const proto = Object.getPrototypeOf(instance);
+    Object.getOwnPropertyNames(proto).forEach(key => {
+        if (key !== 'constructor' && typeof instance[key] === 'function') {
+            instance[key] = instance[key].bind(instance);
+        }
+    });
+}
+
+// Utility: Create text texture on canvas
+function createTextTexture(gl, text, font = 'bold 30px monospace', color = 'black') {
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    context.font = font;
+    const metrics = context.measureText(text);
+    const textWidth = Math.ceil(metrics.width);
+    const textHeight = Math.ceil(parseInt(font, 10) * 1.2);
+    canvas.width = textWidth + 20;
+    canvas.height = textHeight + 20;
+    context.font = font;
+    context.fillStyle = color;
+    context.textBaseline = 'middle';
+    context.textAlign = 'center';
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    context.fillText(text, canvas.width / 2, canvas.height / 2);
+    const texture = new Texture(gl, { generateMipmaps: false });
+    texture.image = canvas;
+    return { texture, width: canvas.width, height: canvas.height };
+}
+
+// Title class for text labels below images
+class Title {
+    constructor({ gl, plane, renderer, text, textColor = '#545050', font = '30px sans-serif' }) {
+        autoBind(this);
+        this.gl = gl;
+        this.plane = plane;
+        this.renderer = renderer;
+        this.text = text;
+        this.textColor = textColor;
+        this.font = font;
+        this.createMesh();
+    }
+
+    createMesh() {
+        const { texture, width, height } = createTextTexture(this.gl, this.text, this.font, this.textColor);
+        const geometry = new Plane(this.gl);
+        const program = new Program(this.gl, {
+            vertex: `
+        attribute vec3 position;
+        attribute vec2 uv;
+        uniform mat4 modelViewMatrix;
+        uniform mat4 projectionMatrix;
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+            fragment: `
+        precision highp float;
+        uniform sampler2D tMap;
+        varying vec2 vUv;
+        void main() {
+          vec4 color = texture2D(tMap, vUv);
+          if (color.a < 0.1) discard;
+          gl_FragColor = color;
+        }
+      `,
+            uniforms: { tMap: { value: texture } },
+            transparent: true
+        });
+        this.mesh = new Mesh(this.gl, { geometry, program });
+        const aspect = width / height;
+        const textHeight = this.plane.scale.y * 0.15;
+        const textWidth = textHeight * aspect;
+        this.mesh.scale.set(textWidth, textHeight, 1);
+        this.mesh.position.y = -this.plane.scale.y * 0.5 - textHeight * 0.5 - 0.05;
+        this.mesh.setParent(this.plane);
+    }
+}
+
+// Media class for individual gallery items
+class Media {
+    constructor({
+        geometry,
+        gl,
+        image,
+        index,
+        length,
+        renderer,
+        scene,
+        screen,
+        text,
+        viewport,
+        bend,
+        textColor,
+        borderRadius = 0,
+        font,
+        onItemClick
+    }) {
+        this.extra = 0;
+        this.geometry = geometry;
+        this.gl = gl;
+        this.image = image;
+        this.index = index;
+        this.length = length;
+        this.renderer = renderer;
+        this.scene = scene;
+        this.screen = screen;
+        this.text = text;
+        this.viewport = viewport;
+        this.bend = bend;
+        this.textColor = textColor;
+        this.borderRadius = borderRadius;
+        this.font = font;
+        this.onItemClick = onItemClick;
+        this.createShader();
+        this.createMesh();
+        this.createTitle();
+        this.onResize();
+    }
+
+    createShader() {
+        const texture = new Texture(this.gl, {
+            generateMipmaps: true
+        });
+        this.program = new Program(this.gl, {
+            depthTest: false,
+            depthWrite: false,
+            vertex: `
+        precision highp float;
+        attribute vec3 position;
+        attribute vec2 uv;
+        uniform mat4 modelViewMatrix;
+        uniform mat4 projectionMatrix;
+        uniform float uTime;
+        uniform float uSpeed;
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          vec3 p = position;
+          p.z = (sin(p.x * 4.0 + uTime) * 1.5 + cos(p.y * 2.0 + uTime) * 1.5) * (0.1 + uSpeed * 0.5);
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+        }
+      `,
+            fragment: `
+        precision highp float;
+        uniform vec2 uImageSizes;
+        uniform vec2 uPlaneSizes;
+        uniform sampler2D tMap;
+        uniform float uBorderRadius;
+        varying vec2 vUv;
+        
+        float roundedBoxSDF(vec2 p, vec2 b, float r) {
+          vec2 d = abs(p) - b;
+          return length(max(d, vec2(0.0))) + min(max(d.x, d.y), 0.0) - r;
+        }
+        
+        void main() {
+          vec2 ratio = vec2(
+            min((uPlaneSizes.x / uPlaneSizes.y) / (uImageSizes.x / uImageSizes.y), 1.0),
+            min((uPlaneSizes.y / uPlaneSizes.x) / (uImageSizes.y / uImageSizes.x), 1.0)
+          );
+          vec2 uv = vec2(
+            vUv.x * ratio.x + (1.0 - ratio.x) * 0.5,
+            vUv.y * ratio.y + (1.0 - ratio.y) * 0.5
+          );
+          vec4 color = texture2D(tMap, uv);
+          
+          float d = roundedBoxSDF(vUv - 0.5, vec2(0.5 - uBorderRadius), uBorderRadius);
+          
+          // Smooth antialiasing for edges
+          float edgeSmooth = 0.002;
+          float alpha = 1.0 - smoothstep(-edgeSmooth, edgeSmooth, d);
+          
+          gl_FragColor = vec4(color.rgb, alpha);
+        }
+      `,
+            uniforms: {
+                tMap: { value: texture },
+                uPlaneSizes: { value: [0, 0] },
+                uImageSizes: { value: [0, 0] },
+                uSpeed: { value: 0 },
+                uTime: { value: 100 * Math.random() },
+                uBorderRadius: { value: this.borderRadius }
+            },
+            transparent: true
+        });
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.src = this.image;
+        img.onload = () => {
+            texture.image = img;
+            this.program.uniforms.uImageSizes.value = [img.naturalWidth, img.naturalHeight];
+        };
+    }
+
+    createMesh() {
+        this.plane = new Mesh(this.gl, {
+            geometry: this.geometry,
+            program: this.program
+        });
+        this.plane.setParent(this.scene);
+    }
+
+    createTitle() {
+        this.title = new Title({
+            gl: this.gl,
+            plane: this.plane,
+            renderer: this.renderer,
+            text: this.text,
+            textColor: this.textColor,
+            font: this.font
+        });
+    }
+
+    update(scroll, direction) {
+        this.plane.position.x = this.x - scroll.current - this.extra;
+
+        const x = this.plane.position.x;
+        const H = this.viewport.width / 2;
+
+        if (this.bend === 0) {
+            this.plane.position.y = 0;
+            this.plane.rotation.z = 0;
+        } else {
+            const B_abs = Math.abs(this.bend);
+            const R = (H * H + B_abs * B_abs) / (2 * B_abs);
+            const effectiveX = Math.min(Math.abs(x), H);
+
+            const arc = R - Math.sqrt(R * R - effectiveX * effectiveX);
+            if (this.bend > 0) {
+                this.plane.position.y = -arc;
+                this.plane.rotation.z = -Math.sign(x) * Math.asin(effectiveX / R);
+            } else {
+                this.plane.position.y = arc;
+                this.plane.rotation.z = Math.sign(x) * Math.asin(effectiveX / R);
+            }
+        }
+
+        this.speed = scroll.current - scroll.last;
+        this.program.uniforms.uTime.value += 0.04;
+        this.program.uniforms.uSpeed.value = this.speed;
+
+        const planeOffset = this.plane.scale.x / 2;
+        const viewportOffset = this.viewport.width / 2;
+        this.isBefore = this.plane.position.x + planeOffset < -viewportOffset;
+        this.isAfter = this.plane.position.x - planeOffset > viewportOffset;
+        if (direction === 'right' && this.isBefore) {
+            this.extra -= this.widthTotal;
+            this.isBefore = this.isAfter = false;
+        }
+        if (direction === 'left' && this.isAfter) {
+            this.extra += this.widthTotal;
+            this.isBefore = this.isAfter = false;
+        }
+    }
+
+    onResize({ screen, viewport } = {}) {
+        if (screen) this.screen = screen;
+        if (viewport) {
+            this.viewport = viewport;
+            if (this.plane.program.uniforms.uViewportSizes) {
+                this.plane.program.uniforms.uViewportSizes.value = [this.viewport.width, this.viewport.height];
+            }
+        }
+        this.scale = this.screen.height / 1500;
+        this.plane.scale.y = (this.viewport.height * (900 * this.scale)) / this.screen.height;
+        this.plane.scale.x = (this.viewport.width * (700 * this.scale)) / this.screen.width;
+        this.plane.program.uniforms.uPlaneSizes.value = [this.plane.scale.x, this.plane.scale.y];
+        this.padding = 2;
+        this.width = this.plane.scale.x + this.padding;
+        this.widthTotal = this.width * this.length;
+        this.x = this.width * this.index;
+    }
+}
+
+// Main App class that manages the gallery
+class App {
+    constructor(
+        container,
+        {
+            items,
+            bend,
+            textColor = '#ffffff',
+            borderRadius = 0,
+            font = 'bold 30px Figtree',
+            scrollSpeed = 2,
+            scrollEase = 0.05,
+            onItemClick
+        } = {}
+    ) {
+        document.documentElement.classList.remove('no-js');
+        this.container = container;
+        this.scrollSpeed = scrollSpeed;
+        this.scroll = { ease: scrollEase, current: 0, target: 0, last: 0 };
+        this.onCheckDebounce = debounce(this.onCheck, 200);
+        this.onItemClick = onItemClick;
+        this.createRenderer();
+        this.createCamera();
+        this.createScene();
+        this.onResize();
+        this.createGeometry();
+        this.createMedias(items, bend, textColor, borderRadius, font);
+        this.update();
+        this.addEventListeners();
+    }
+
+    createRenderer() {
+        this.renderer = new Renderer({
+            alpha: true,
+            antialias: true,
+            dpr: Math.min(window.devicePixelRatio || 1, 2)
+        });
+        this.gl = this.renderer.gl;
+        this.gl.clearColor(0, 0, 0, 0);
+        this.container.appendChild(this.gl.canvas);
+    }
+
+    createCamera() {
+        this.camera = new Camera(this.gl);
+        this.camera.fov = 45;
+        this.camera.position.z = 20;
+    }
+
+    createScene() {
+        this.scene = new Transform();
+    }
+
+    createGeometry() {
+        this.planeGeometry = new Plane(this.gl, {
+            heightSegments: 50,
+            widthSegments: 100
+        });
+    }
+
+    createMedias(items, bend = 1, textColor, borderRadius, font) {
+        const defaultItems = [
+            { image: `https://picsum.photos/seed/1/800/600?grayscale`, text: 'Bridge' },
+            { image: `https://picsum.photos/seed/2/800/600?grayscale`, text: 'Desk Setup' },
+            { image: `https://picsum.photos/seed/3/800/600?grayscale`, text: 'Waterfall' },
+            { image: `https://picsum.photos/seed/4/800/600?grayscale`, text: 'Strawberries' },
+            { image: `https://picsum.photos/seed/5/800/600?grayscale`, text: 'Deep Diving' },
+            { image: `https://picsum.photos/seed/16/800/600?grayscale`, text: 'Train Track' }
+        ];
+        const galleryItems = items && items.length ? items : defaultItems;
+        this.mediasImages = galleryItems.concat(galleryItems);
+        this.medias = this.mediasImages.map((data, index) => {
+            return new Media({
+                geometry: this.planeGeometry,
+                gl: this.gl,
+                image: data.image,
+                index,
+                length: this.mediasImages.length,
+                renderer: this.renderer,
+                scene: this.scene,
+                screen: this.screen,
+                text: data.text,
+                viewport: this.viewport,
+                bend,
+                textColor,
+                borderRadius,
+                font,
+                onItemClick: () => {
+                    if (this.onItemClick) this.onItemClick(data);
+                    window.dispatchEvent(new CustomEvent('openPortfolioModal', { detail: data }));
+                }
+            });
+        });
+    }
+
+    onTouchDown(e) {
+        this.isDown = true;
+        this.isDragging = false;
+        this.scroll.position = this.scroll.current;
+        this.start = e.touches ? e.touches[0].clientX : e.clientX;
+    }
+
+    onTouchMove(e) {
+        if (this.isDown) {
+            const x = e.touches ? e.touches[0].clientX : e.clientX;
+            if (Math.abs(this.start - x) > 5) this.isDragging = true;
+            const distance = (this.start - x) * (this.scrollSpeed * 0.025);
+            this.scroll.target = this.scroll.position + distance;
+        } else {
+            if (e.touches || !this.renderer) return;
+            const rect = this.renderer.gl.canvas.getBoundingClientRect();
+            const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+            const y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+            if (Math.abs(x) < 0.3 && Math.abs(y) < 0.5) {
+                this.container.style.cursor = 'pointer';
+            } else {
+                this.container.style.cursor = 'grab';
+            }
+        }
+    }
+
+    onTouchUp() {
+        this.isDown = false;
+        this.onCheck();
+    }
+
+    onWheel(e) {
+        const delta = e.deltaY || e.wheelDelta || e.detail;
+        this.scroll.target += (delta > 0 ? this.scrollSpeed : -this.scrollSpeed) * 0.2;
+        this.onCheckDebounce();
+    }
+
+    onCheck() {
+        if (!this.medias || !this.medias[0]) return;
+        const width = this.medias[0].width;
+        const itemIndex = Math.round(Math.abs(this.scroll.target) / width);
+        const item = width * itemIndex;
+        this.scroll.target = this.scroll.target < 0 ? -item : item;
+    }
+
+    onClick(e) {
+        if (this.isDragging) return;
+        const rect = this.renderer.gl.canvas.getBoundingClientRect();
+        const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+        const y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+        if (Math.abs(x) < 0.3 && Math.abs(y) < 0.5 && this.medias && this.medias[0]) {
+            const width = this.medias[0].width;
+            const index = Math.round(this.scroll.current / width);
+            const mediaLength = this.medias.length;
+            const normalizedIndex = ((index % mediaLength) + mediaLength) % mediaLength;
+
+            if (this.medias[normalizedIndex]) {
+                this.medias[normalizedIndex].onItemClick();
+            }
+        }
+    }
+
+    onResize() {
+        this.screen = {
+            width: this.container.clientWidth,
+            height: this.container.clientHeight
+        };
+        this.renderer.setSize(this.screen.width, this.screen.height);
+        this.camera.perspective({
+            aspect: this.screen.width / this.screen.height
+        });
+        const fov = (this.camera.fov * Math.PI) / 180;
+        const height = 2 * Math.tan(fov / 2) * this.camera.position.z;
+        const width = height * this.camera.aspect;
+        this.viewport = { width, height };
+        if (this.medias) {
+            this.medias.forEach(media => media.onResize({ screen: this.screen, viewport: this.viewport }));
+        }
+    }
+
+    update() {
+        this.scroll.current = lerp(this.scroll.current, this.scroll.target, this.scroll.ease);
+        const direction = this.scroll.current > this.scroll.last ? 'right' : 'left';
+        if (this.medias) {
+            this.medias.forEach(media => media.update(this.scroll, direction));
+        }
+        this.renderer.render({ scene: this.scene, camera: this.camera });
+        this.scroll.last = this.scroll.current;
+        this.raf = window.requestAnimationFrame(this.update.bind(this));
+    }
+
+    addEventListeners() {
+        this.boundOnResize = this.onResize.bind(this);
+        this.boundOnWheel = this.onWheel.bind(this);
+        this.boundOnTouchDown = this.onTouchDown.bind(this);
+        this.boundOnTouchMove = this.onTouchMove.bind(this);
+        this.boundOnTouchUp = this.onTouchUp.bind(this);
+        this.boundOnClick = this.onClick.bind(this);
+        window.addEventListener('resize', this.boundOnResize);
+        window.addEventListener('mousewheel', this.boundOnWheel);
+        window.addEventListener('wheel', this.boundOnWheel);
+        window.addEventListener('mousedown', this.boundOnTouchDown);
+        window.addEventListener('mousemove', this.boundOnTouchMove);
+        window.addEventListener('mouseup', this.boundOnTouchUp);
+        window.addEventListener('touchstart', this.boundOnTouchDown);
+        window.addEventListener('touchmove', this.boundOnTouchMove);
+        window.addEventListener('touchend', this.boundOnTouchUp);
+        this.container.addEventListener('click', this.boundOnClick);
+    }
+
+    destroy() {
+        window.cancelAnimationFrame(this.raf);
+        window.removeEventListener('resize', this.boundOnResize);
+        window.removeEventListener('mousewheel', this.boundOnWheel);
+        window.removeEventListener('wheel', this.boundOnWheel);
+        window.removeEventListener('mousedown', this.boundOnTouchDown);
+        window.removeEventListener('mousemove', this.boundOnTouchMove);
+        window.removeEventListener('mouseup', this.boundOnTouchUp);
+        window.removeEventListener('touchstart', this.boundOnTouchDown);
+        window.removeEventListener('touchmove', this.boundOnTouchMove);
+        window.removeEventListener('touchend', this.boundOnTouchUp);
+        this.container.removeEventListener('click', this.boundOnClick);
+        if (this.renderer && this.renderer.gl && this.renderer.gl.canvas.parentNode) {
+            this.renderer.gl.canvas.parentNode.removeChild(this.renderer.gl.canvas);
+        }
+    }
+}
+
+// Main CircularGallery React component
+export default function CircularGallery({
+    items,
+    bend = 3,
+    textColor = '#ffffff',
+    borderRadius = 0.05,
+    font = 'bold 30px Figtree',
+    scrollSpeed = 2,
+    scrollEase = 0.05,
+    onItemClick = undefined
+}) {
+    const containerRef = useRef(null);
+
+    useEffect(() => {
+        if (!containerRef.current) return;
+
+        const app = new App(containerRef.current, {
+            items,
+            bend,
+            textColor,
+            borderRadius,
+            font,
+            scrollSpeed,
+            scrollEase,
+            onItemClick
+        });
+
+        return () => {
+            app.destroy();
+        };
+    }, [items, bend, textColor, borderRadius, font, scrollSpeed, scrollEase, onItemClick]);
+
+    return <div className="circular-gallery" ref={containerRef} />;
+}
+
+
+--- src\layouts\AdminLayout.astro
+
+---
+import "../styles/global.css";
+
+interface Props {
+    title: string;
+}
+
+const { title } = Astro.props;
+
+// Get current path for active nav highlighting
+const currentPath = Astro.url.pathname;
+---
+
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width" />
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <title>{title} | KowTattys Admin</title>
+        <meta name="robots" content="noindex, nofollow" />
+    </head>
+    <body class="bg-gray-100 dark:bg-gray-900 min-h-screen">
+        <!-- Auth Check Script -->
+        <script>
+            import { supabase } from "../lib/supabase";
+
+            async function checkAuth() {
+                const {
+                    data: { session },
+                } = await supabase.auth.getSession();
+
+                if (!session) {
+                    window.location.href = "/admin/login";
+                }
+            }
+
+            checkAuth();
+
+            // Listen for auth state changes
+            supabase.auth.onAuthStateChange((event, session) => {
+                if (event === "SIGNED_OUT" || !session) {
+                    window.location.href = "/admin/login";
+                }
+            });
+        </script>
+
+        <div class="flex min-h-screen">
+            <!-- Sidebar -->
+            <aside
+                class="w-64 bg-gray-900 text-white flex flex-col fixed h-full"
+            >
+                <!-- Logo -->
+                <div class="p-6 border-b border-gray-800">
+                    <a href="/admin" class="text-2xl font-bold font-doto">
+                        KowTattys
+                    </a>
+                    <p class="text-gray-400 text-sm mt-1">Admin Panel</p>
+                </div>
+
+                <!-- Navigation -->
+                <nav class="flex-1 p-4">
+                    <ul class="space-y-2">
+                        <li>
+                            <a
+                                href="/admin"
+                                class:list={[
+                                    "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
+                                    currentPath === "/admin" ||
+                                    currentPath === "/admin/"
+                                        ? "bg-primary text-white"
+                                        : "text-gray-300 hover:bg-gray-800",
+                                ]}
+                            >
+                                <svg
+                                    class="w-5 h-5"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+                                    ></path>
+                                </svg>
+                                Dashboard
+                            </a>
+                        </li>
+                        <li>
+                            <a
+                                href="/admin/bookings"
+                                class:list={[
+                                    "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
+                                    currentPath.startsWith("/admin/bookings")
+                                        ? "bg-primary text-white"
+                                        : "text-gray-300 hover:bg-gray-800",
+                                ]}
+                            >
+                                <svg
+                                    class="w-5 h-5"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                                    ></path>
+                                </svg>
+                                Bookings
+                            </a>
+                        </li>
+                        <li>
+                            <a
+                                href="/admin/cms"
+                                class:list={[
+                                    "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
+                                    currentPath.startsWith("/admin/cms")
+                                        ? "bg-primary text-white"
+                                        : "text-gray-300 hover:bg-gray-800",
+                                ]}
+                            >
+                                <svg
+                                    class="w-5 h-5"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                                    ></path>
+                                </svg>
+                                Content (CMS)
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+
+                <!-- Footer -->
+                <div class="p-4 border-t border-gray-800">
+                    <a
+                        href="/"
+                        class="flex items-center gap-3 px-4 py-3 text-gray-300 hover:bg-gray-800 rounded-lg transition-colors"
+                    >
+                        <svg
+                            class="w-5 h-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                            ></path>
+                        </svg>
+                        View Site
+                    </a>
+                    <button
+                        id="logout-btn"
+                        class="flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-gray-800 rounded-lg transition-colors w-full mt-2"
+                    >
+                        <svg
+                            class="w-5 h-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                            ></path>
+                        </svg>
+                        Logout
+                    </button>
+                </div>
+            </aside>
+
+            <!-- Main Content -->
+            <main class="flex-1 ml-64">
+                <!-- Top Bar -->
+                <header
+                    class="bg-white dark:bg-gray-800 shadow-sm px-8 py-4 sticky top-0 z-10"
+                >
+                    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+                        {title}
+                    </h1>
+                </header>
+
+                <!-- Page Content -->
+                <div class="p-8">
+                    <slot />
+                </div>
+            </main>
+        </div>
+
+        <script>
+            import { supabase } from "../lib/supabase";
+
+            document
+                .getElementById("logout-btn")
+                ?.addEventListener("click", async () => {
+                    await supabase.auth.signOut();
+                    window.location.href = "/admin/login";
+                });
+        </script>
+
+        <style>
+            :root {
+                --primary: 271 81% 51%;
+            }
+
+            .bg-primary {
+                background-color: hsl(271, 81%, 51%);
+            }
+        </style>
+    </body>
+</html>
+
+
+--- src\layouts\Layout.astro
+
+---
+import "../styles/global.css";
+import BookingModal from "../components/BookingModal.astro";
+
+interface Props {
+    title: string;
+    description?: string;
+}
+
+const { title, description = "Toronto's premiere tattoo experience" } =
+    Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="description" content={description} />
+        <meta name="viewport" content="width=device-width" />
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <title>{title}</title>
+        <!-- Prevent Flash of Incorrect Theme -->
+        <script is:inline>
+            const theme = (() => {
+                if (
+                    typeof localStorage !== "undefined" &&
+                    localStorage.getItem("theme")
+                ) {
+                    return localStorage.getItem("theme");
+                }
+                if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+                    return "dark";
+                }
+                return "light";
+            })();
+            if (theme === "dark") {
+                document.documentElement.classList.add("dark");
+            } else {
+                document.documentElement.classList.remove("dark");
+            }
+        </script>
+    </head>
+    <body
+        class="bg-background text-foreground font-playfair min-h-screen flex flex-col"
+    >
+        <header
+            class="fixed w-full z-50 bg-background/80 backdrop-blur-sm border-b"
+        >
+            <div
+                class="container mx-auto px-4 h-16 flex justify-between items-center"
+            >
+                <a href="/" class="font-doto text-4xl font-bold">KowTattys</a>
+
+                <nav class="hidden md:flex items-center space-x-8">
+                    <a href="/" class="hover:text-primary transition-colors"
+                        >Home</a
+                    >
+                    <a
+                        href="/portfolio"
+                        class="hover:text-primary transition-colors"
+                        >Portfolio</a
+                    >
+                    <a
+                        href="/flash-designs"
+                        class="hover:text-primary transition-colors">Flash</a
+                    >
+                    <button
+                        class="booking-trigger hover:text-primary transition-colors cursor-pointer bg-transparent border-none font-inherit text-inherit"
+                    >
+                        Book Now
+                    </button>
+                    <a
+                        href="/contact"
+                        class="hover:text-primary transition-colors">Contact</a
+                    >
+
+                    <div class="flex items-center gap-2">
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            class="text-yellow-500"
+                            ><circle cx="12" cy="12" r="5"></circle><path
+                                d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"
+                            ></path></svg
+                        >
+
+                        <button
+                            id="theme-toggle"
+                            class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 transition-colors duration-300 focus:outline-none"
+                            aria-label="Toggle Theme"
+                        >
+                            <div
+                                class="absolute top-[2px] left-[2px] bg-white border-gray-300 border rounded-full h-5 w-5 transition-transform duration-300 dark:translate-x-full dark:border-gray-600"
+                            >
+                            </div>
+                        </button>
+
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            class="text-gray-700 dark:text-gray-300"
+                            ><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"
+                            ></path></svg
+                        >
+                    </div>
+                </nav>
+
+                <!-- Mobile Menu Button -->
+                <button
+                    id="mobile-menu-btn"
+                    class="md:hidden p-2 text-foreground focus:outline-none"
+                    aria-label="Toggle mobile menu"
+                >
+                    <svg
+                        class="w-6 h-6"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Mobile Menu Dropdown -->
+            <div
+                id="mobile-menu"
+                class="hidden md:hidden bg-background/95 backdrop-blur-sm border-b transition-all duration-300 ease-in-out"
+            >
+                <nav class="flex flex-col p-4 space-y-4">
+                    <a
+                        href="/"
+                        class="text-lg hover:text-primary transition-colors"
+                        >Home</a
+                    >
+                    <a
+                        href="/portfolio"
+                        class="text-lg hover:text-primary transition-colors"
+                        >Portfolio</a
+                    >
+                    <a
+                        href="/flash-designs"
+                        class="text-lg hover:text-primary transition-colors"
+                        >Flash</a
+                    >
+                    <button
+                        class="booking-trigger text-lg hover:text-primary transition-colors cursor-pointer bg-transparent border-none font-inherit text-inherit text-left"
+                    >
+                        Book Now
+                    </button>
+                    <a
+                        href="/contact"
+                        class="text-lg hover:text-primary transition-colors"
+                        >Contact</a
+                    >
+                    <div class="flex items-center gap-2">
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            class="text-yellow-500"
+                            ><circle cx="12" cy="12" r="5"></circle><path
+                                d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"
+                            ></path></svg
+                        >
+
+                        <button
+                            id="theme-toggle-mobile"
+                            class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 transition-colors duration-300 focus:outline-none"
+                            aria-label="Toggle Theme"
+                        >
+                            <div
+                                class="absolute top-[2px] left-[2px] bg-white border-gray-300 border rounded-full h-5 w-5 transition-transform duration-300 dark:translate-x-full dark:border-gray-600"
+                            >
+                            </div>
+                        </button>
+
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            class="text-gray-700 dark:text-gray-300"
+                            ><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"
+                            ></path></svg
+                        >
+                    </div>
+                </nav>
+            </div>
+        </header>
+
+        <main class="flex-grow pt-16">
+            <slot />
+        </main>
+
+        <footer class="bg-background border-t py-8 mt-20">
+            <div
+                class="container mx-auto px-4 text-center text-muted-foreground"
+            >
+                <div class="flex justify-center gap-6 mb-4">
+                    <a
+                        href="/contact"
+                        class="hover:text-primary transition-colors">Contact</a
+                    >
+                    <a
+                        href="/policy"
+                        class="hover:text-primary transition-colors">Policies</a
+                    >
+                    <a
+                        href="/portfolio"
+                        class="hover:text-primary transition-colors"
+                        >Portfolio</a
+                    >
+                    <a
+                        href="/flash-designs"
+                        class="hover:text-primary transition-colors"
+                        >Flash Designs</a
+                    >
+                </div>
+                <p>
+                    &copy; {new Date().getFullYear()} Kow Tattys. All rights reserved.
+                </p>
+            </div>
+        </footer>
+
+        <!-- Global Booking Modal -->
+        <BookingModal />
+
+        <script>
+            // Vanilla JS for Theme Toggle
+            const handleToggleClick = () => {
+                const element = document.documentElement;
+                element.classList.toggle("dark");
+                const isDark = element.classList.contains("dark");
+                localStorage.setItem("theme", isDark ? "dark" : "light");
+            };
+
+            // Attach to both desktop and mobile toggle buttons
+            ["theme-toggle", "theme-toggle-mobile"].forEach((id) => {
+                document
+                    .getElementById(id)
+                    ?.addEventListener("click", handleToggleClick);
+            });
+
+            // Vanilla JS for Mobile Menu Toggle
+            const btn = document.getElementById("mobile-menu-btn");
+            const menu = document.getElementById("mobile-menu");
+
+            btn?.addEventListener("click", () => {
+                menu?.classList.toggle("hidden");
+            });
+
+            // Booking Modal Triggers
+            document.querySelectorAll(".booking-trigger").forEach((trigger) => {
+                trigger.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    // Close mobile menu if open
+                    menu?.classList.add("hidden");
+                    // Dispatch custom event to open booking modal
+                    window.dispatchEvent(new CustomEvent("openBookingModal"));
+                });
+            });
+        </script>
+    </body>
+</html>
+
+
+--- src\lib\supabase.ts
+
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
+
+const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || "";
+const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || "";
+
+// Validate environment variables
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.warn(
+    "⚠️ Supabase environment variables are not set. Please ensure PUBLIC_SUPABASE_URL and PUBLIC_SUPABASE_ANON_KEY are defined in your .env file.",
+  );
+}
+
+// Create client only if we have valid credentials, otherwise create a dummy that will fail gracefully
+export const supabase: SupabaseClient =
+  supabaseUrl && supabaseAnonKey
+    ? createClient(supabaseUrl, supabaseAnonKey)
+    : createClient("https://placeholder.supabase.co", "placeholder-key");
+
+// ============================================
+// Type Definitions
+// ============================================
+
+export type BookingStatus = "pending" | "accepted" | "denied";
+
+export interface Booking {
+  id: string;
+  created_at: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  tattoo_idea: string;
+  tattoo_placement: string;
+  tattoo_size: string;
+  is_custom: boolean;
+  reference_photos: string[];
+  status: BookingStatus;
+  admin_notes?: string;
+  client_access_token?: string;
+  agreed_price?: number;
+  scheduled_date?: string;
+}
+
+export type ImageCategory = "featured" | "portfolio" | "flash";
+
+export interface ContentImage {
+  id: string;
+  created_at: string;
+  url: string;
+  category: ImageCategory;
+  title: string;
+  description?: string;
+  price?: number;
+  size?: string;
+  is_featured: boolean;
+  display_order?: number;
+}
+
+export interface SiteSetting {
+  id: string;
+  key: string;
+  value: string;
+  updated_at: string;
+}
+
+export type MessageSenderRole = "admin" | "client";
+
+export interface Message {
+  id: string;
+  created_at: string;
+  booking_id: string;
+  sender_role: MessageSenderRole;
+  content: string;
+}
+
+// ============================================
+// Content Images Helpers
+// ============================================
+
+export async function getContentImages(category?: ImageCategory) {
+  let query = supabase
+    .from("content_images")
+    .select("*")
+    .order("display_order", { ascending: true });
+
+  if (category) {
+    query = query.eq("category", category);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return data as ContentImage[];
+}
+
+export async function getFeaturedImages() {
+  const { data, error } = await supabase
+    .from("content_images")
+    .select("*")
+    .eq("is_featured", true)
+    .order("display_order", { ascending: true });
+
+  if (error) throw error;
+  return data as ContentImage[];
+}
+
+export async function getPortfolioImages() {
+  return getContentImages("portfolio");
+}
+
+export async function getFlashDesigns() {
+  return getContentImages("flash");
+}
+
+export async function createContentImage(
+  image: Omit<ContentImage, "id" | "created_at">,
+) {
+  const { data, error } = await supabase
+    .from("content_images")
+    .insert(image)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as ContentImage;
+}
+
+export async function updateContentImage(
+  id: string,
+  updates: Partial<ContentImage>,
+) {
+  const { data, error } = await supabase
+    .from("content_images")
+    .update(updates)
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as ContentImage;
+}
+
+export async function deleteContentImage(id: string) {
+  const { error } = await supabase.from("content_images").delete().eq("id", id);
+
+  if (error) throw error;
+}
+
+// ============================================
+// Site Settings Helpers
+// ============================================
+
+export async function getSiteSetting(key: string): Promise<string | null> {
+  const { data, error } = await supabase
+    .from("site_settings")
+    .select("value")
+    .eq("key", key)
+    .single();
+
+  if (error) {
+    if (error.code === "PGRST116") return null; // Not found
+    throw error;
+  }
+  return data?.value ?? null;
+}
+
+export async function setSiteSetting(key: string, value: string) {
+  const { data, error } = await supabase
+    .from("site_settings")
+    .upsert(
+      { key, value, updated_at: new Date().toISOString() },
+      { onConflict: "key" },
+    )
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as SiteSetting;
+}
+
+export async function getContactInfo() {
+  return getSiteSetting("contact_info");
+}
+
+export async function getPolicyText() {
+  return getSiteSetting("policy_text");
+}
+
+// ============================================
+// Bookings Helpers
+// ============================================
+
+export async function getBookings(status?: BookingStatus) {
+  let query = supabase
+    .from("bookings")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (status) {
+    query = query.eq("status", status);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return data as Booking[];
+}
+
+export async function getBookingById(id: string) {
+  const { data, error } = await supabase
+    .from("bookings")
+    .select("*")
+    .eq("id", id)
+    .single();
+
+  if (error) throw error;
+  return data as Booking;
+}
+
+export async function getBookingByToken(token: string) {
+  const { data, error } = await supabase
+    .from("bookings")
+    .select("*")
+    .eq("client_access_token", token)
+    .single();
+
+  if (error) {
+    if (error.code === "PGRST116") return null; // Not found
+    throw error;
+  }
+  return data as Booking;
+}
+
+export async function updateBookingStatus(
+  id: string,
+  status: BookingStatus,
+  adminNotes?: string,
+) {
+  const updates: Partial<Booking> = { status };
+  if (adminNotes !== undefined) {
+    updates.admin_notes = adminNotes;
+  }
+
+  const { data, error } = await supabase
+    .from("bookings")
+    .update(updates)
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as Booking;
+}
+
+export async function updateBooking(id: string, updates: Partial<Booking>) {
+  const { data, error } = await supabase
+    .from("bookings")
+    .update(updates)
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as Booking;
+}
+
+export function generateClientToken(): string {
+  return crypto.randomUUID();
+}
+
+// ============================================
+// Messages Helpers
+// ============================================
+
+export async function getMessages(bookingId: string) {
+  const { data, error } = await supabase
+    .from("messages")
+    .select("*")
+    .eq("booking_id", bookingId)
+    .order("created_at", { ascending: true });
+
+  if (error) throw error;
+  return data as Message[];
+}
+
+export async function sendMessage(
+  bookingId: string,
+  senderRole: MessageSenderRole,
+  content: string,
+) {
+  const { data, error } = await supabase
+    .from("messages")
+    .insert({
+      booking_id: bookingId,
+      sender_role: senderRole,
+      content,
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as Message;
+}
+
+export function subscribeToMessages(
+  bookingId: string,
+  callback: (message: Message) => void,
+) {
+  const channel = supabase
+    .channel(`messages:${bookingId}`)
+    .on(
+      "postgres_changes",
+      {
+        event: "INSERT",
+        schema: "public",
+        table: "messages",
+        filter: `booking_id=eq.${bookingId}`,
+      },
+      (payload) => {
+        callback(payload.new as Message);
+      },
+    )
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
+}
+
+// ============================================
+// Auth Helpers
+// ============================================
+
+export async function signIn(email: string, password: string) {
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+
+  if (error) throw error;
+  return data;
+}
+
+export async function signOut() {
+  const { error } = await supabase.auth.signOut();
+  if (error) throw error;
+}
+
+export async function getSession() {
+  const {
+    data: { session },
+    error,
+  } = await supabase.auth.getSession();
+  if (error) throw error;
+  return session;
+}
+
+export async function getUser() {
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+  if (error) throw error;
+  return user;
+}
+
+// ============================================
+// Storage Helpers
+// ============================================
+
+export async function uploadImage(bucket: string, file: File, path?: string) {
+  const fileName =
+    path || `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, "")}`;
+
+  const { data, error } = await supabase.storage
+    .from(bucket)
+    .upload(fileName, file);
+
+  if (error) throw error;
+
+  const {
+    data: { publicUrl },
+  } = supabase.storage.from(bucket).getPublicUrl(fileName);
+
+  return { path: data.path, publicUrl };
+}
+
+export async function deleteImage(bucket: string, path: string) {
+  const { error } = await supabase.storage.from(bucket).remove([path]);
+
+  if (error) throw error;
+}
+
+
+--- src\pages\contact.astro
+
+---
+import Layout from "../layouts/Layout.astro";
+import { supabase } from "../lib/supabase";
+
+// Fetch contact info from site_settings
+let contactContent = "";
+
+try {
+    const { data } = await supabase
+        .from("site_settings")
+        .select("value")
+        .eq("key", "contact_info")
+        .single();
+
+    contactContent = data?.value || "";
+} catch (error) {
+    console.error("Error fetching contact info:", error);
+}
+
+// Default content if nothing in database
+const defaultContent = `
+# Get in Touch
+
+We'd love to hear from you! Whether you have questions about our work, want to discuss a custom design, or are ready to book your next tattoo, we're here to help.
+
+## Studio Location
+
+**KowTattys Tattoo Studio**
+123 Ink Street
+Toronto, ON M5V 1A1
+Canada
+
+## Hours of Operation
+
+- **Monday - Friday:** 11:00 AM - 8:00 PM
+- **Saturday:** 12:00 PM - 6:00 PM
+- **Sunday:** Closed
+
+## Contact Methods
+
+- **Email:** info@kowtattys.com
+- **Phone:** (416) 555-TATT
+- **Instagram:** @kowtattys
+
+## Before Your Visit
+
+Please note that all tattoo sessions require a booking. Walk-ins are welcome for consultations only.
+
+For custom designs, we recommend reaching out at least 2-3 weeks in advance to allow time for design development.
+`;
+
+const displayContent = contactContent || defaultContent;
+
+// Simple markdown-like parsing
+function parseContent(content: string) {
+    return content
+        .split('\n')
+        .map(line => {
+            // Headers
+            if (line.startsWith('### ')) {
+                return `<h3 class="text-xl font-bold mt-6 mb-3 font-doto">${line.slice(4)}</h3>`;
+            }
+            if (line.startsWith('## ')) {
+                return `<h2 class="text-2xl font-bold mt-8 mb-4 font-doto">${line.slice(3)}</h2>`;
+            }
+            if (line.startsWith('# ')) {
+                return `<h1 class="text-4xl font-bold mb-6 font-doto">${line.slice(2)}</h1>`;
+            }
+            // Bold text
+            line = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            // List items
+            if (line.startsWith('- ')) {
+                return `<li class="ml-4 mb-2">${line.slice(2)}</li>`;
+            }
+            // Empty lines
+            if (line.trim() === '') {
+                return '<br />';
+            }
+            // Regular paragraphs
+            return `<p class="mb-4 text-muted-foreground">${line}</p>`;
+        })
+        .join('\n');
+}
+---
+
+<Layout title="Contact | KowTattys">
+    <div class="container mx-auto px-4 py-12 max-w-4xl">
+        <!-- Hero Section -->
+        <div class="text-center mb-12">
+            <h1 class="text-5xl font-bold font-doto mb-4">Contact Us</h1>
+            <p class="text-xl text-muted-foreground">
+                Ready to get inked? Let's talk.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Main Content -->
+            <div class="lg:col-span-2">
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8">
+                    <article class="prose dark:prose-invert max-w-none">
+                        <Fragment set:html={parseContent(displayContent)} />
+                    </article>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="lg:col-span-1 space-y-6">
+                <!-- Quick Contact Card -->
+                <div class="bg-purple-50 dark:bg-purple-900/20 rounded-xl border border-purple-200 dark:border-purple-800 p-6">
+                    <h3 class="text-lg font-semibold text-purple-900 dark:text-purple-100 mb-4 flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                        Quick Actions
+                    </h3>
+                    <div class="space-y-3">
+                        <button
+                            class="booking-trigger w-full py-3 px-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium flex items-center justify-center gap-2"
+                        >
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            Book an Appointment
+                        </button>
+                        <a
+                            href="/flash-designs"
+                            class="w-full py-3 px-4 bg-white dark:bg-gray-800 text-purple-600 dark:text-purple-400 border border-purple-300 dark:border-purple-700 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/30 transition-colors font-medium flex items-center justify-center gap-2"
+                        >
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            Browse Flash Designs
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Social Media -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                        Follow Us
+                    </h3>
+                    <div class="flex gap-4">
+                        <a
+                            href="https://instagram.com/kowtattys"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="p-3 bg-gradient-to-br from-purple-600 to-pink-500 text-white rounded-lg hover:opacity-90 transition-opacity"
+                            aria-label="Instagram"
+                        >
+                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                            </svg>
+                        </a>
+                        <a
+                            href="https://twitter.com/kowtattys"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="p-3 bg-black text-white rounded-lg hover:opacity-90 transition-opacity"
+                            aria-label="Twitter/X"
+                        >
+                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                            </svg>
+                        </a>
+                        <a
+                            href="https://tiktok.com/@kowtattys"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="p-3 bg-gray-900 text-white rounded-lg hover:opacity-90 transition-opacity"
+                            aria-label="TikTok"
+                        >
+                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.31-4.64 2.93 2.93 0 01.88.13V9.4a6.84 6.84 0 00-1-.05A6.33 6.33 0 005 20.1a6.34 6.34 0 0010.86-4.43v-7a8.16 8.16 0 004.77 1.52v-3.4a4.85 4.85 0 01-1-.1z"/>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Map Placeholder -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    <div class="aspect-video bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                        <div class="text-center text-gray-500 dark:text-gray-400">
+                            <svg class="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            <p class="text-sm">Toronto, ON</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</Layout>
+
+<style>
+    article h1 {
+        @apply text-4xl font-bold mb-6;
+    }
+
+    article h2 {
+        @apply text-2xl font-bold mt-8 mb-4;
+    }
+
+    article h3 {
+        @apply text-xl font-bold mt-6 mb-3;
+    }
+
+    article p {
+        @apply mb-4 text-gray-700 dark:text-gray-300;
+    }
+
+    article ul {
+        @apply list-disc list-inside mb-4;
+    }
+
+    article li {
+        @apply mb-2 text-gray-700 dark:text-gray-300;
+    }
+
+    article strong {
+        @apply font-semibold text-gray-900 dark:text-white;
+    }
+</style>
+
+
+--- src\pages\flash-designs.astro
+
+---
+import Layout from "../layouts/Layout.astro";
+import CircularGallery from "../components/CircularGallery.jsx";
+import { supabase } from "../lib/supabase";
+
+// Default/fallback flash designs data
+const defaultFlashDesigns = [
+    {
+        image: "/images/home/h1.jpeg",
+        text: "Minimalist Rose",
+        description:
+            "A delicate single-line rose design perfect for wrist or ankle placement. Clean, elegant, and timeless.",
+        price: 150,
+        size: "2-3 inches",
+    },
+    {
+        image: "/images/home/h2.jpeg",
+        text: "Geometric Wolf",
+        description:
+            "A striking geometric wolf portrait combining sharp angles with natural form. Ideal for forearm or shoulder.",
+        price: 250,
+        size: "4-5 inches",
+    },
+    {
+        image: "/images/home/h3.jpeg",
+        text: "Celestial Moon",
+        description:
+            "Crescent moon with intricate dotwork details and stars. Perfect for upper arm or back placement.",
+        price: 200,
+        size: "3-4 inches",
+    },
+    {
+        image: "/images/home/h4.jpeg",
+        text: "Japanese Koi",
+        description:
+            "Traditional Japanese koi fish with flowing water elements. A symbol of perseverance and strength.",
+        price: 350,
+        size: "5-6 inches",
+    },
+    {
+        image: "/images/home/h5.jpeg",
+        text: "Butterfly Collection",
+        description:
+            "A set of three delicate butterflies in varying sizes. Can be placed together or separately.",
+        price: 180,
+        size: "1-2 inches each",
+    },
+    {
+        image: "/images/home/h6.jpeg",
+        text: "Sacred Heart",
+        description:
+            "Classic sacred heart design with modern styling. Rich in symbolism and visual impact.",
+        price: 275,
+        size: "4-5 inches",
+    },
+    {
+        image: "/images/portfolio/dragon.png",
+        text: "Dragon Serpent",
+        description:
+            "Coiling dragon with detailed scales and fierce expression. A bold statement piece.",
+        price: 400,
+        size: "6+ inches",
+    },
+    {
+        image: "/images/portfolio/naruto.png",
+        text: "Anime Flash",
+        description:
+            "Anime-inspired design with vibrant energy. Perfect for fans looking to show their passion.",
+        price: 300,
+        size: "4-5 inches",
+    },
+];
+
+// Try to fetch flash designs from database
+let flashDesigns = defaultFlashDesigns;
+
+try {
+    const { data: flashImages } = await supabase
+        .from("content_images")
+        .select("*")
+        .eq("category", "flash")
+        .order("display_order", { ascending: true });
+
+    if (flashImages && flashImages.length > 0) {
+        flashDesigns = flashImages.map((img: any) => ({
+            image: img.url,
+            text: img.title || "Flash Design",
+            description: img.description || "",
+            price: img.price || 200,
+            size: img.size || "Varies",
+        }));
+    }
+} catch (error) {
+    console.error("Error fetching flash designs:", error);
+    // Fall back to default flash designs
+}
+---
+
+<Layout title="Flash Designs | KowTattys">
+    <div class="container mx-auto px-4 py-12">
+        <div class="text-center mb-12">
+            <h1 class="text-5xl font-bold mb-4 font-doto">Flash Designs</h1>
+            <p class="text-muted-foreground text-lg max-w-2xl mx-auto">
+                Ready-to-ink designs at fixed prices. Pick your favorite and
+                book your session today!
+            </p>
+        </div>
+
+        <!-- Circular Gallery Container -->
+        <div id="gallery-container" class="gallery-wrapper">
+            <CircularGallery
+                client:only="react"
+                items={flashDesigns}
+                bend={2.5}
+                textColor="#ffffff"
+                borderRadius={0.08}
+                font="bold 28px Doto"
+                scrollSpeed={2}
+                scrollEase={0.07}
+            />
+            <div class="gallery-instructions">
+                Scroll or drag to explore • Click to view details
+            </div>
+        </div>
+
+        <!-- Design Grid (Alternative view) -->
+        <div class="mt-16">
+            <h2 class="text-3xl font-bold text-center mb-8 font-doto">
+                All Designs
+            </h2>
+            <div
+                class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+            >
+                {
+                    flashDesigns.map((design, index) => (
+                        <div
+                            class="flash-card group cursor-pointer"
+                            data-index={index}
+                        >
+                            <div class="relative aspect-square overflow-hidden rounded-lg">
+                                <img
+                                    src={design.image}
+                                    alt={design.text}
+                                    class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                                    loading="lazy"
+                                />
+                                <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                                <div class="absolute bottom-0 left-0 right-0 p-4 transform translate-y-full group-hover:translate-y-0 transition-transform duration-300">
+                                    <p class="text-white font-semibold">
+                                        {design.text}
+                                    </p>
+                                    <p class="text-green-400 font-bold">
+                                        ${design.price}
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <h3 class="font-semibold text-foreground">
+                                    {design.text}
+                                </h3>
+                                <p class="text-sm text-muted-foreground">
+                                    {design.size}
+                                </p>
+                            </div>
+                        </div>
+                    ))
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Flash Design Modal -->
+    <dialog
+        id="flash-modal"
+        class="backdrop:bg-black/80 rounded-lg p-0 bg-background max-w-4xl w-full max-h-[90vh]"
+    >
+        <div class="relative">
+            <button
+                id="close-modal"
+                class="absolute top-4 right-4 z-10 p-2 bg-black/50 text-white rounded-full hover:bg-black/70 transition-colors"
+                aria-label="Close modal"
+            >
+                <svg
+                    class="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                >
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+            <div class="grid md:grid-cols-2">
+                <div class="bg-black flex items-center justify-center p-4">
+                    <img
+                        id="modal-image"
+                        src=""
+                        alt=""
+                        class="max-h-[50vh] md:max-h-[70vh] w-auto object-contain rounded-lg"
+                    />
+                </div>
+                <div class="p-8 flex flex-col">
+                    <h2
+                        id="modal-title"
+                        class="text-2xl font-bold mb-2 font-doto"
+                    >
+                    </h2>
+                    <p
+                        id="modal-size"
+                        class="text-sm text-muted-foreground mb-4"
+                    >
+                    </p>
+                    <p id="modal-desc" class="text-muted-foreground mb-6"></p>
+
+                    <div
+                        class="mt-auto pt-6 border-t border-border flex items-center justify-between"
+                    >
+                        <div>
+                            <p class="text-sm text-muted-foreground">
+                                Fixed Price
+                            </p>
+                            <p
+                                id="modal-price"
+                                class="text-3xl font-bold text-green-500"
+                            >
+                            </p>
+                        </div>
+                        <button
+                            id="book-flash-btn"
+                            class="bg-primary text-primary-foreground px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity"
+                        >
+                            Book This Design
+                        </button>
+                    </div>
+
+                    <p class="text-xs text-muted-foreground mt-4">
+                        * Price includes consultation, design prep, and single
+                        session. Additional sessions may incur extra charges.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </dialog>
+</Layout>
+
+<script>
+    // Store flash designs data for modal access
+    const flashDesigns = [
+        {
+            image: "/images/home/h1.jpeg",
+            text: "Minimalist Rose",
+            description:
+                "A delicate single-line rose design perfect for wrist or ankle placement. Clean, elegant, and timeless.",
+            price: 150,
+            size: "2-3 inches",
+        },
+        {
+            image: "/images/home/h2.jpeg",
+            text: "Geometric Wolf",
+            description:
+                "A striking geometric wolf portrait combining sharp angles with natural form. Ideal for forearm or shoulder.",
+            price: 250,
+            size: "4-5 inches",
+        },
+        {
+            image: "/images/home/h3.jpeg",
+            text: "Celestial Moon",
+            description:
+                "Crescent moon with intricate dotwork details and stars. Perfect for upper arm or back placement.",
+            price: 200,
+            size: "3-4 inches",
+        },
+        {
+            image: "/images/home/h4.jpeg",
+            text: "Japanese Koi",
+            description:
+                "Traditional Japanese koi fish with flowing water elements. A symbol of perseverance and strength.",
+            price: 350,
+            size: "5-6 inches",
+        },
+        {
+            image: "/images/home/h5.jpeg",
+            text: "Butterfly Collection",
+            description:
+                "A set of three delicate butterflies in varying sizes. Can be placed together or separately.",
+            price: 180,
+            size: "1-2 inches each",
+        },
+        {
+            image: "/images/home/h6.jpeg",
+            text: "Sacred Heart",
+            description:
+                "Classic sacred heart design with modern styling. Rich in symbolism and visual impact.",
+            price: 275,
+            size: "4-5 inches",
+        },
+        {
+            image: "/images/portfolio/dragon.png",
+            text: "Dragon Serpent",
+            description:
+                "Coiling dragon with detailed scales and fierce expression. A bold statement piece.",
+            price: 400,
+            size: "6+ inches",
+        },
+        {
+            image: "/images/portfolio/naruto.png",
+            text: "Anime Flash",
+            description:
+                "Anime-inspired design with vibrant energy. Perfect for fans looking to show their passion.",
+            price: 300,
+            size: "4-5 inches",
+        },
+    ];
+
+    document.addEventListener("DOMContentLoaded", () => {
+        const modal = document.getElementById(
+            "flash-modal",
+        ) as HTMLDialogElement;
+        const closeBtn = document.getElementById("close-modal");
+        const modalImg = document.getElementById(
+            "modal-image",
+        ) as HTMLImageElement;
+        const modalTitle = document.getElementById("modal-title");
+        const modalDesc = document.getElementById("modal-desc");
+        const modalPrice = document.getElementById("modal-price");
+        const modalSize = document.getElementById("modal-size");
+        const bookFlashBtn = document.getElementById("book-flash-btn");
+
+        let currentDesign: (typeof flashDesigns)[0] | null = null;
+
+        function openModal(design: (typeof flashDesigns)[0]) {
+            currentDesign = design;
+            if (modalImg) modalImg.src = design.image || "";
+            if (modalTitle) modalTitle.textContent = design.text || "";
+            if (modalDesc) modalDesc.textContent = design.description || "";
+            if (modalPrice) modalPrice.textContent = `$${design.price}`;
+            if (modalSize) modalSize.textContent = `Size: ${design.size}`;
+            modal.showModal();
+        }
+
+        // Close modal on button click
+        closeBtn?.addEventListener("click", () => modal.close());
+
+        // Close on backdrop click
+        modal.addEventListener("click", (e) => {
+            const rect = modal.getBoundingClientRect();
+            if (
+                e.clientX < rect.left ||
+                e.clientX > rect.right ||
+                e.clientY < rect.top ||
+                e.clientY > rect.bottom
+            ) {
+                modal.close();
+            }
+        });
+
+        // Close on Escape key
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "Escape" && modal.open) {
+                modal.close();
+            }
+        });
+
+        // Listen for custom event from gallery items (CircularGallery)
+        window.addEventListener("openPortfolioModal", ((e: CustomEvent) => {
+            const { image, text, description } = e.detail;
+            // Find matching design by image or text
+            const design = flashDesigns.find(
+                (d) => d.image === image || d.text === text,
+            );
+            if (design) {
+                openModal(design);
+            } else {
+                // Fallback for items not in our list
+                openModal({
+                    image,
+                    text,
+                    description: description || "",
+                    price: 200,
+                    size: "Varies",
+                });
+            }
+        }) as EventListener);
+
+        // Flash card click handlers (grid view)
+        document.querySelectorAll(".flash-card").forEach((card) => {
+            card.addEventListener("click", () => {
+                const index = parseInt(
+                    card.getAttribute("data-index") || "0",
+                    10,
+                );
+                const design = flashDesigns[index];
+                if (design) {
+                    openModal(design);
+                }
+            });
+        });
+
+        // Book This Design button
+        bookFlashBtn?.addEventListener("click", () => {
+            modal.close();
+            // Store the selected design info for the booking form
+            if (currentDesign) {
+                sessionStorage.setItem(
+                    "selectedFlashDesign",
+                    JSON.stringify(currentDesign),
+                );
+            }
+            // Open the booking modal
+            window.dispatchEvent(new CustomEvent("openBookingModal"));
+        });
+    });
+</script>
+
+<style>
+    .gallery-wrapper {
+        position: relative;
+        height: 70vh;
+        min-height: 450px;
+        width: 100%;
+        margin-bottom: 2rem;
+    }
+
+    .gallery-wrapper :global(.circular-gallery) {
+        width: 100%;
+        height: 100%;
+    }
+
+    .flash-card {
+        transition: transform 0.2s ease;
+    }
+
+    .flash-card:hover {
+        transform: translateY(-4px);
+    }
+
+    #flash-modal {
+        border: none;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+
+    #flash-modal::backdrop {
+        background-color: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(4px);
+    }
+
+    #flash-modal[open] {
+        animation: modalFadeIn 0.3s ease-out;
+    }
+
+    @keyframes modalFadeIn {
+        from {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    @media (max-width: 768px) {
+        #flash-modal .grid {
+            grid-template-columns: 1fr;
+        }
+
+        #flash-modal img {
+            max-height: 40vh !important;
+        }
+    }
+</style>
+
+
+--- src\pages\index.astro
+
+---
+import Layout from '../layouts/Layout.astro';
+import { supabase } from '../lib/supabase';
+
+// Server-Side Data Fetching for Featured Work
+// This runs at build time (SSG) or request time (SSR)
+
+// Default/fallback artworks
+const defaultArtworks = [
+  { src: '/images/home/h1.jpeg', title: 'Artwork 1' },
+  { src: '/images/home/h2.jpeg', title: 'Artwork 2' },
+  { src: '/images/home/h3.jpeg', title: 'Artwork 3' },
+  { src: '/images/home/h4.jpeg', title: 'Artwork 4' },
+  { src: '/images/home/h5.jpeg', title: 'Artwork 5' },
+  { src: '/images/home/h6.jpeg', title: 'Artwork 6' },
+];
+
+// Try to fetch featured images from database
+let artworks = defaultArtworks;
+
+try {
+  const { data: featuredImages } = await supabase
+    .from('content_images')
+    .select('*')
+    .eq('is_featured', true)
+    .order('display_order', { ascending: true });
+
+  if (featuredImages && featuredImages.length > 0) {
+    artworks = featuredImages.map((img: any) => ({
+      src: img.url,
+      title: img.title || 'Artwork',
+      description: img.description || '',
+    }));
+  }
+} catch (error) {
+  console.error('Error fetching featured images:', error);
+  // Fall back to default artworks
+}
+---
+
+<Layout title="Kow Tattys | Home">
+  <!-- Hero Section -->
+  <section class="relative h-screen flex items-center justify-center bg-black text-white overflow-hidden">
+    <canvas id="particles-canvas" class="absolute inset-0 w-full h-full"></canvas>
+
+    <div class="relative z-20 text-center px-4">
+      <h1 class="text-5xl md:text-7xl font-bold font-doto mb-6 typing-effect">
+        KowTattys
+      </h1>
+      <p class="text-xl mb-8">Where Art Meets Skin</p>
+      <button class="booking-trigger bg-primary text-primary-foreground px-8 py-3 rounded-full font-medium hover:opacity-90 transition-opacity cursor-pointer border-none">
+        Book Now
+      </button>
+    </div>
+  </section>
+
+  <!-- Featured Artworks Gallery -->
+  <section class="py-20 bg-background">
+    <div class="container mx-auto px-4">
+      <h2 class="text-4xl font-bold text-center mb-12 font-doto">Featured Artworks</h2>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {artworks.map((artwork, index) => (
+          <div
+            class="group relative aspect-[3/4] rounded-xl border border-black/[0.1] bg-[hsl(var(--pink-cream))] dark:bg-black dark:border-white/[0.2] hover:shadow-lg dark:hover:shadow-2xl transition-all duration-300"
+            data-artwork-index={index}
+          >
+            <div class="absolute inset-0 p-6 sm:p-8 flex flex-col">
+              <h3 class="text-xl font-semibold text-black dark:text-foreground mb-4 relative z-10">
+                {artwork.title}
+              </h3>
+
+              <div class="relative flex-grow w-full h-full">
+                <div class="absolute inset-0">
+                  <img
+                    src={artwork.src}
+                    alt={artwork.title}
+                    class="w-full h-full object-cover rounded-lg"
+                    loading="lazy"
+                  />
+                  <div
+                    class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-lg"
+                  />
+                </div>
+              </div>
+
+              <div class="mt-4 flex items-center justify-between relative z-10">
+                <span class="text-sm text-black/70 dark:text-muted-foreground">
+                  Click to view details
+                </span>
+                <span class="text-sm font-medium text-black dark:text-foreground">
+                  →
+                </span>
+              </div>
+            </div>
+
+            <!-- Clickable overlay -->
+            <div class="absolute inset-0 w-full h-full cursor-pointer z-20"></div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Modal -->
+  <div id="artwork-modal" class="fixed inset-0 z-50 items-center justify-center bg-black/90 backdrop-blur-sm" style="display: none;">
+    <div class="relative max-w-7xl max-h-[90vh] w-full mx-4">
+      <button
+        id="modal-close"
+        class="absolute top-4 right-4 z-10 text-white hover:text-gray-300 transition-colors bg-black/50 rounded-full p-2 hover:bg-black/70"
+        aria-label="Close modal"
+      >
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+      <div class="bg-[hsl(var(--pink-cream))] rounded-lg overflow-hidden shadow-2xl dark:bg-background">
+        <div class="p-6 bg-gradient-to-r from-gray-900 to-gray-800">
+          <h3 id="modal-title" class="text-2xl font-bold text-white text-center font-doto"></h3>
+        </div>
+        <div class="flex items-center justify-center bg-gray-100 p-4 dark:bg-muted">
+          <img
+            id="modal-image"
+            src=""
+            alt=""
+            class="max-w-full max-h-[70vh] object-contain rounded-lg"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  // Vanilla JS Particle + Shooting Star Animation
+  document.addEventListener('DOMContentLoaded', () => {
+    const canvas = document.getElementById('particles-canvas');
+    if (!canvas || !(canvas instanceof HTMLCanvasElement)) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const dpr = window.devicePixelRatio || 1;
+    const particles = [];
+    const shootingStars = [];
+    const mouse = { x: 0, y: 0, isPressed: false };
+    const config = {
+      quantity: 120,
+      staticity: 50,
+      ease: 50,
+      baseSize: 0.4,
+    };
+
+    function resizeCanvas() {
+      const { innerWidth, innerHeight } = window;
+      canvas.width = innerWidth * dpr;
+      canvas.height = innerHeight * dpr;
+      canvas.style.width = innerWidth + 'px';
+      canvas.style.height = innerHeight + 'px';
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    // Mouse logic inspired by particles.tsx
+    window.addEventListener('mousemove', (event) => {
+      const rect = canvas.getBoundingClientRect();
+      mouse.x = event.clientX - rect.left - rect.width / 2;
+      mouse.y = event.clientY - rect.top - rect.height / 2;
+    });
+
+    window.addEventListener('mousedown', () => {
+      mouse.isPressed = true;
+    });
+    window.addEventListener('mouseup', () => {
+      mouse.isPressed = false;
+    });
+    window.addEventListener('touchstart', () => {
+      mouse.isPressed = true;
+    });
+    window.addEventListener('touchend', () => {
+      mouse.isPressed = false;
+    });
+
+    function remapValue(value, start1, end1, start2, end2) {
+      const remapped =
+        ((value - start1) * (end2 - start2)) / (end1 - start1) + start2;
+      return remapped > 0 ? remapped : 0;
+    }
+
+    function createParticle() {
+      const w = canvas.width / dpr;
+      const h = canvas.height / dpr;
+      const x = Math.random() * w;
+      const y = Math.random() * h;
+      const size = Math.random() * 2 + config.baseSize;
+
+      return {
+        x,
+        y,
+        translateX: 0,
+        translateY: 0,
+        size,
+        alpha: 0,
+        targetAlpha: +(Math.random() * 0.6 + 0.1).toFixed(1),
+        dx: (Math.random() - 0.5) * 0.1,
+        dy: (Math.random() - 0.5) * 0.1,
+        magnetism: 0.1 + Math.random() * 4,
+      };
+    }
+
+    function initParticles() {
+      particles.length = 0;
+      for (let i = 0; i < config.quantity; i++) {
+        particles.push(createParticle());
+      }
+    }
+
+    // Shooting star logic inspired by shooting-star.tsx
+    function generateStartPosition() {
+      const edge = Math.floor(Math.random() * 3);
+      let startX, startY, angle;
+
+      switch (edge) {
+        case 0: // top
+          startX = Math.random() * window.innerWidth;
+          startY = -20;
+          angle = 30 + Math.random() * 30;
+          break;
+        case 1: // left
+          startX = -20;
+          startY = Math.random() * (window.innerHeight / 2);
+          angle = 15 + Math.random() * 30;
+          break;
+        case 2: // right
+        default:
+          startX = window.innerWidth + 20;
+          startY = Math.random() * (window.innerHeight / 2);
+          angle = 195 + Math.random() * 30;
+          break;
+      }
+
+      return { startX, startY, angle };
+    }
+
+    function createShootingStar(forceComet = false) {
+      const { startX, startY, angle } = generateStartPosition();
+      const isComet = forceComet || Math.random() < 0.2;
+      const baseSize = isComet ? 5 + Math.random() * 2 : 2 + Math.random() * 2;
+      // Treat "speed" as the travel duration in seconds, like in shooting-star.tsx
+      const duration = isComet ? 4 + Math.random() : 3.2 + Math.random() * 0.6;
+
+      const distance = Math.max(window.innerWidth, window.innerHeight) * 1.5;
+      const angleRad = (angle * Math.PI) / 180;
+      const totalFrames = duration * 60; // approx 60fps
+      const vx = (Math.cos(angleRad) * distance) / totalFrames;
+      const vy = (Math.sin(angleRad) * distance) / totalFrames;
+
+      return {
+        x: startX,
+        y: startY,
+        size: baseSize,
+        angle,
+        duration,
+        vx,
+        vy,
+        life: 0,
+        maxLife: totalFrames,
+        isComet,
+      };
+    }
+
+    function updateParticles() {
+      const w = canvas.width / dpr;
+      const h = canvas.height / dpr;
+
+      particles.forEach((p, i) => {
+        const edge = [
+          p.x + p.translateX - p.size,
+          w - p.x - p.translateX - p.size,
+          p.y + p.translateY - p.size,
+          h - p.y - p.translateY - p.size,
+        ];
+        const closestEdge = edge.reduce((a, b) => Math.min(a, b));
+        const remapClosestEdge = +remapValue(closestEdge, 0, 20, 0, 1).toFixed(
+          2
+        );
+
+        if (mouse.isPressed) {
+          const dx = p.x - mouse.x - w / 2;
+          const dy = p.y - mouse.y - h / 2;
+          const distance = Math.sqrt(dx * dx + dy * dy) || 1;
+          const force = Math.max(100 - distance, 0) / 10;
+          p.dx += (dx / distance) * force * 0.2;
+          p.dy += (dy / distance) * force * 0.2;
+        }
+
+        p.dx *= 0.95;
+        p.dy *= 0.95;
+        p.x += p.dx;
+        p.y += p.dy;
+
+        if (remapClosestEdge > 1) {
+          p.alpha += 0.02;
+          if (p.alpha > p.targetAlpha) p.alpha = p.targetAlpha;
+        } else {
+          p.alpha = p.targetAlpha * remapClosestEdge;
+        }
+
+        const magnetism = mouse.isPressed ? p.magnetism * 0.5 : p.magnetism;
+        p.translateX +=
+          (mouse.x / (config.staticity / magnetism) - p.translateX) /
+          config.ease;
+        p.translateY +=
+          (mouse.y / (config.staticity / magnetism) - p.translateY) /
+          config.ease;
+
+        if (
+          p.x < -p.size ||
+          p.x > w + p.size ||
+          p.y < -p.size ||
+          p.y > h + p.size
+        ) {
+          particles[i] = createParticle();
+        }
+      });
+    }
+
+    function updateShootingStars() {
+      if (Math.random() < 0.035) {
+        shootingStars.push(createShootingStar());
+      }
+
+      const w = canvas.width / dpr;
+      const h = canvas.height / dpr;
+
+      for (let i = shootingStars.length - 1; i >= 0; i--) {
+        const s = shootingStars[i];
+        s.x += s.vx;
+        s.y += s.vy;
+        // life is measured in frames, aligned with maxLife
+        s.life += 1;
+
+        if (
+          s.x < -100 ||
+          s.x > w + 100 ||
+          s.y < -100 ||
+          s.y > h + 100 ||
+          s.life > s.maxLife
+        ) {
+          shootingStars.splice(i, 1);
+        }
+      }
+    }
+
+    function drawParticles() {
+      particles.forEach((p) => {
+        ctx.save();
+        ctx.translate(p.translateX, p.translateY);
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 255, 255, ${p.alpha})`;
+        ctx.fill();
+        ctx.restore();
+      });
+    }
+
+    function drawShootingStars() {
+      shootingStars.forEach((s) => {
+        const alpha = 1 - s.life / s.maxLife;
+
+        // main body
+        ctx.save();
+        ctx.translate(s.x, s.y);
+        ctx.rotate((s.angle * Math.PI) / 180);
+
+        const gradient = ctx.createLinearGradient(0, 0, -150, 0);
+        if (s.isComet) {
+          gradient.addColorStop(0, `rgba(255, 255, 255, ${alpha})`);
+          gradient.addColorStop(0.4, `rgba(255, 215, 0, ${alpha * 0.6})`);
+          gradient.addColorStop(1, `rgba(255, 69, 0, 0)`);
+        } else {
+          gradient.addColorStop(0, `rgba(255, 255, 255, ${alpha})`);
+          gradient.addColorStop(0.4, `rgba(255, 255, 255, ${alpha * 0.5})`);
+          gradient.addColorStop(1, `rgba(255, 255, 255, 0)`);
+        }
+
+        // head
+        ctx.beginPath();
+        ctx.arc(0, 0, s.size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+        ctx.shadowColor = 'rgba(255,255,255,0.8)';
+        ctx.shadowBlur = s.isComet ? 12 : 6;
+        ctx.fill();
+
+        // tail
+        ctx.beginPath();
+        ctx.moveTo(0, -s.size / 2);
+        ctx.lineTo(-150, 0);
+        ctx.lineTo(0, s.size / 2);
+        ctx.closePath();
+        ctx.fillStyle = gradient;
+        ctx.fill();
+
+        ctx.restore();
+      });
+    }
+
+    function animate() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      updateParticles();
+      updateShootingStars();
+      drawParticles();
+      drawShootingStars();
+      requestAnimationFrame(animate);
+    }
+
+    initParticles();
+    animate();
+  });
+
+  // Artwork Modal Functionality
+  document.addEventListener('DOMContentLoaded', () => {
+    const modal = document.getElementById('artwork-modal');
+    const modalImage = document.getElementById('modal-image') as HTMLImageElement | null;
+    const modalTitle = document.getElementById('modal-title');
+    const closeButton = document.getElementById('modal-close');
+
+    const artworks = [
+      { src: '/images/home/h1.jpeg', title: 'Artwork 1' },
+      { src: '/images/home/h2.jpeg', title: 'Artwork 2' },
+      { src: '/images/home/h3.jpeg', title: 'Artwork 3' },
+      { src: '/images/home/h4.jpeg', title: 'Artwork 4' },
+      { src: '/images/home/h5.jpeg', title: 'Artwork 5' },
+      { src: '/images/home/h6.jpeg', title: 'Artwork 6' },
+    ];
+
+    if (!modal || !modalImage || !modalTitle) {
+      console.error('Modal elements not found');
+      return;
+    }
+
+    // Open modal when artwork is clicked
+    const artworkOverlays = document.querySelectorAll('.absolute.inset-0.w-full.h-full.cursor-pointer');
+    artworkOverlays.forEach((overlay, index) => {
+      overlay.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const artwork = artworks[index];
+
+        if (artwork) {
+          modalImage.src = artwork.src;
+          modalImage.alt = artwork.title;
+          modalTitle.textContent = artwork.title;
+          // Use inline style to ensure display works
+          modal.style.display = 'flex';
+          document.body.style.overflow = 'hidden'; // Prevent background scrolling
+        }
+      });
+    });
+
+    // Close modal functions
+    const closeModal = () => {
+      if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = ''; // Restore scrolling
+      }
+    };
+
+    if (closeButton) {
+      closeButton.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        closeModal();
+      });
+    }
+
+    // Close modal when clicking outside the image
+    if (modal) {
+      modal.addEventListener('click', (e) => {
+        // Only close if clicking directly on the modal backdrop, not on child elements
+        if (e.target === modal) {
+          closeModal();
+        }
+      });
+    }
+
+    // Close modal with Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && modal && modal.style.display !== 'none') {
+        closeModal();
+      }
+    });
+  });
+</script>
+
+<style>
+  /* CSS Typewriter substitute */
+  .typing-effect {
+    overflow: hidden;
+    border-right: .15em solid orange;
+    white-space: nowrap;
+    animation: typing 3.5s steps(40, end), blink-caret .75s step-end infinite;
+  }
+
+  @keyframes typing {
+    from { width: 0 }
+    to { width: 100% }
+  }
+
+  @keyframes blink-caret {
+    from, to { border-color: transparent }
+    50% { border-color: orange; }
+  }
+
+  /* Modal animations */
+  #artwork-modal {
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  #modal-image {
+    animation: zoomIn 0.3s ease-out;
+  }
+
+  @keyframes zoomIn {
+    from {
+      transform: scale(0.9);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+</style>
+
+
+---
+import Layout from "../layouts/Layout.astro";
+import CircularGallery from "../components/CircularGallery.jsx";
+import { supabase } from "../lib/supabase";
+
+// Default/fallback portfolio data
+const defaultPortfolioData = [
+    {
+        image: "/images/portfolio/boondocks.png",
+        text: "Boondocks Portrait",
+        description:
+            "A vibrant tribute to the iconic Boondocks animated series, featuring detailed linework and rich color saturation.",
+    },
+    {
+        image: "/images/portfolio/dragon.png",
+        text: "Dragon Design",
+        description:
+            "A powerful dragon tattoo featuring intricate scales and dynamic movement, crafted with precision shading.",
+    },
+    {
+        image: "/images/portfolio/frsnchise.png",
+        text: "Franchise Piece",
+        description:
+            "Bold artistic expression with clean lines and creative composition, representing personal style and identity.",
+    },
+    {
+        image: "/images/portfolio/luvers.png",
+        text: "Lovers Art",
+        description:
+            "An emotional piece capturing connection and intimacy through flowing artistic design and subtle color gradients.",
+    },
+    {
+        image: "/images/portfolio/naruto.png",
+        text: "Naruto Tribute",
+        description:
+            "A dynamic anime-inspired tattoo featuring the legendary ninja, showcasing vibrant colors and action-packed composition.",
+    },
+];
+
+// Try to fetch portfolio images from database
+let portfolioData = defaultPortfolioData;
+
+try {
+    const { data: portfolioImages } = await supabase
+        .from("content_images")
+        .select("*")
+        .eq("category", "portfolio")
+        .order("display_order", { ascending: true });
+
+    if (portfolioImages && portfolioImages.length > 0) {
+        portfolioData = portfolioImages.map((img: any) => ({
+            image: img.url,
+            text: img.title || "Artwork",
+            description: img.description || "",
+        }));
+    }
+} catch (error) {
+    console.error("Error fetching portfolio images:", error);
+    // Fall back to default portfolio data
+}
+---
+
+<Layout title="Portfolio">
+    <div class="container mx-auto px-4 py-12">
+        <h1 class="text-5xl font-bold text-center mb-12 font-doto">
+            Portfolio
+        </h1>
+
+        <!-- Circular Gallery Container -->
+        <div id="gallery-container" class="gallery-wrapper">
+            <CircularGallery
+                client:only="react"
+                items={portfolioData}
+                bend={2.5}
+                textColor="#ffffff"
+                borderRadius={0.08}
+                font="bold 28px Doto"
+                scrollSpeed={2}
+                scrollEase={0.07}
+            />
+            <div class="gallery-instructions">Scroll or drag to explore</div>
+        </div>
+    </div>
+
+    <!-- Modal for Portfolio Details -->
+    <dialog
+        id="portfolio-modal"
+        class="backdrop:bg-black/80 rounded-lg p-0 bg-background max-w-4xl w-full max-h-[90vh]"
+    >
+        <div class="relative">
+            <button
+                id="close-modal"
+                class="absolute top-4 right-4 z-10 p-2 bg-black/50 text-white rounded-full hover:bg-black/70 transition-colors"
+                >✕</button
+            >
+            <div class="grid md:grid-cols-2">
+                <div class="bg-black flex items-center justify-center">
+                    <img
+                        id="modal-image"
+                        src=""
+                        alt=""
+                        class="max-h-[60vh] md:max-h-full w-auto object-contain"
+                    />
+                </div>
+                <div class="p-8">
+                    <h2
+                        id="modal-title"
+                        class="text-2xl font-bold mb-4 font-doto"
+                    >
+                    </h2>
+                    <p id="modal-desc" class="text-muted-foreground"></p>
+                </div>
+            </div>
+        </div>
+    </dialog>
+</Layout>
+
+<script>
+    // Modal functionality
+    document.addEventListener("DOMContentLoaded", () => {
+        const modal = document.getElementById(
+            "portfolio-modal",
+        ) as HTMLDialogElement;
+        const closeBtn = document.getElementById("close-modal");
+        const modalImg = document.getElementById(
+            "modal-image",
+        ) as HTMLImageElement;
+        const modalTitle = document.getElementById("modal-title");
+        const modalDesc = document.getElementById("modal-desc");
+
+        // Close modal on button click
+        closeBtn?.addEventListener("click", () => modal.close());
+
+        // Close on backdrop click
+        modal.addEventListener("click", (e) => {
+            const rect = modal.getBoundingClientRect();
+            if (
+                e.clientX < rect.left ||
+                e.clientX > rect.right ||
+                e.clientY < rect.top ||
+                e.clientY > rect.bottom
+            ) {
+                modal.close();
+            }
+        });
+
+        // Close on Escape key
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "Escape" && modal.open) {
+                modal.close();
+            }
+        });
+
+        // Listen for custom event from gallery items
+        window.addEventListener("openPortfolioModal", ((e: CustomEvent) => {
+            const { image, text, description } = e.detail;
+            if (modalImg) modalImg.src = image || "";
+            if (modalTitle) modalTitle.textContent = text || "";
+            if (modalDesc) modalDesc.textContent = description || "";
+            modal.showModal();
+        }) as EventListener);
+    });
+</script>
+
+<style>
+    .gallery-wrapper {
+        position: relative;
+        height: 80vh;
+        min-height: 500px;
+        width: 100%;
+    }
+
+    .gallery-wrapper :global(.circular-gallery) {
+        width: 100%;
+        height: 100%;
+    }
+</style>
+

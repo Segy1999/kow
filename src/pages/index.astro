@@ -1,0 +1,545 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { supabase } from '../lib/supabase';
+
+// Server-Side Data Fetching for Featured Work
+// This runs at build time (SSG) or request time (SSR)
+
+// Default/fallback artworks
+const defaultArtworks = [
+  { src: '/images/home/h1.jpeg', title: 'Artwork 1' },
+  { src: '/images/home/h2.jpeg', title: 'Artwork 2' },
+  { src: '/images/home/h3.jpeg', title: 'Artwork 3' },
+  { src: '/images/home/h4.jpeg', title: 'Artwork 4' },
+  { src: '/images/home/h5.jpeg', title: 'Artwork 5' },
+  { src: '/images/home/h6.jpeg', title: 'Artwork 6' },
+];
+
+// Try to fetch featured images from database
+let artworks = defaultArtworks;
+
+try {
+  const { data: featuredImages } = await supabase
+    .from('content_images')
+    .select('*')
+    .eq('is_featured', true)
+    .order('display_order', { ascending: true });
+
+  if (featuredImages && featuredImages.length > 0) {
+    artworks = featuredImages.map((img: any) => ({
+      src: img.url,
+      title: img.title || 'Artwork',
+      description: img.description || '',
+    }));
+  }
+} catch (error) {
+  console.error('Error fetching featured images:', error);
+  // Fall back to default artworks
+}
+---
+
+<Layout title="Kow Tattys | Home">
+  <!-- Hero Section -->
+  <section class="relative h-screen flex items-center justify-center bg-black text-white overflow-hidden">
+    <canvas id="particles-canvas" class="absolute inset-0 w-full h-full"></canvas>
+
+    <div class="relative z-20 text-center px-4">
+      <h1 class="text-5xl md:text-7xl font-bold font-doto mb-6 typing-effect">
+        KowTattys
+      </h1>
+      <p class="text-xl mb-8">Where Art Meets Skin</p>
+      <button class="booking-trigger bg-primary text-primary-foreground px-8 py-3 rounded-full font-medium hover:opacity-90 transition-opacity cursor-pointer border-none">
+        Book Now
+      </button>
+    </div>
+  </section>
+
+  <!-- Featured Artworks Gallery -->
+  <section class="py-20 bg-background">
+    <div class="container mx-auto px-4">
+      <h2 class="text-4xl font-bold text-center mb-12 font-doto">Featured Artworks</h2>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {artworks.map((artwork, index) => (
+          <div
+            class="group relative aspect-[3/4] rounded-xl border border-black/[0.1] bg-[hsl(var(--pink-cream))] dark:bg-black dark:border-white/[0.2] hover:shadow-lg dark:hover:shadow-2xl transition-all duration-300"
+            data-artwork-index={index}
+          >
+            <div class="absolute inset-0 p-6 sm:p-8 flex flex-col">
+              <h3 class="text-xl font-semibold text-black dark:text-foreground mb-4 relative z-10">
+                {artwork.title}
+              </h3>
+
+              <div class="relative flex-grow w-full h-full">
+                <div class="absolute inset-0">
+                  <img
+                    src={artwork.src}
+                    alt={artwork.title}
+                    class="w-full h-full object-cover rounded-lg"
+                    loading="lazy"
+                  />
+                  <div
+                    class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-lg"
+                  />
+                </div>
+              </div>
+
+              <div class="mt-4 flex items-center justify-between relative z-10">
+                <span class="text-sm text-black/70 dark:text-muted-foreground">
+                  Click to view details
+                </span>
+                <span class="text-sm font-medium text-black dark:text-foreground">
+                  →
+                </span>
+              </div>
+            </div>
+
+            <!-- Clickable overlay -->
+            <div class="absolute inset-0 w-full h-full cursor-pointer z-20"></div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Modal -->
+  <div id="artwork-modal" class="fixed inset-0 z-50 items-center justify-center bg-black/90 backdrop-blur-sm" style="display: none;">
+    <div class="relative max-w-7xl max-h-[90vh] w-full mx-4">
+      <button
+        id="modal-close"
+        class="absolute top-4 right-4 z-10 text-white hover:text-gray-300 transition-colors bg-black/50 rounded-full p-2 hover:bg-black/70"
+        aria-label="Close modal"
+      >
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+      <div class="bg-[hsl(var(--pink-cream))] rounded-lg overflow-hidden shadow-2xl dark:bg-background">
+        <div class="p-6 bg-gradient-to-r from-gray-900 to-gray-800">
+          <h3 id="modal-title" class="text-2xl font-bold text-white text-center font-doto"></h3>
+        </div>
+        <div class="flex items-center justify-center bg-gray-100 p-4 dark:bg-muted">
+          <img
+            id="modal-image"
+            src=""
+            alt=""
+            class="max-w-full max-h-[70vh] object-contain rounded-lg"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  // Vanilla JS Particle + Shooting Star Animation
+  document.addEventListener('DOMContentLoaded', () => {
+    const canvas = document.getElementById('particles-canvas');
+    if (!canvas || !(canvas instanceof HTMLCanvasElement)) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const dpr = window.devicePixelRatio || 1;
+    const particles = [];
+    const shootingStars = [];
+    const mouse = { x: 0, y: 0, isPressed: false };
+    const config = {
+      quantity: 120,
+      staticity: 50,
+      ease: 50,
+      baseSize: 0.4,
+    };
+
+    function resizeCanvas() {
+      const { innerWidth, innerHeight } = window;
+      canvas.width = innerWidth * dpr;
+      canvas.height = innerHeight * dpr;
+      canvas.style.width = innerWidth + 'px';
+      canvas.style.height = innerHeight + 'px';
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    // Mouse logic inspired by particles.tsx
+    window.addEventListener('mousemove', (event) => {
+      const rect = canvas.getBoundingClientRect();
+      mouse.x = event.clientX - rect.left - rect.width / 2;
+      mouse.y = event.clientY - rect.top - rect.height / 2;
+    });
+
+    window.addEventListener('mousedown', () => {
+      mouse.isPressed = true;
+    });
+    window.addEventListener('mouseup', () => {
+      mouse.isPressed = false;
+    });
+    window.addEventListener('touchstart', () => {
+      mouse.isPressed = true;
+    });
+    window.addEventListener('touchend', () => {
+      mouse.isPressed = false;
+    });
+
+    function remapValue(value, start1, end1, start2, end2) {
+      const remapped =
+        ((value - start1) * (end2 - start2)) / (end1 - start1) + start2;
+      return remapped > 0 ? remapped : 0;
+    }
+
+    function createParticle() {
+      const w = canvas.width / dpr;
+      const h = canvas.height / dpr;
+      const x = Math.random() * w;
+      const y = Math.random() * h;
+      const size = Math.random() * 2 + config.baseSize;
+
+      return {
+        x,
+        y,
+        translateX: 0,
+        translateY: 0,
+        size,
+        alpha: 0,
+        targetAlpha: +(Math.random() * 0.6 + 0.1).toFixed(1),
+        dx: (Math.random() - 0.5) * 0.1,
+        dy: (Math.random() - 0.5) * 0.1,
+        magnetism: 0.1 + Math.random() * 4,
+      };
+    }
+
+    function initParticles() {
+      particles.length = 0;
+      for (let i = 0; i < config.quantity; i++) {
+        particles.push(createParticle());
+      }
+    }
+
+    // Shooting star logic inspired by shooting-star.tsx
+    function generateStartPosition() {
+      const edge = Math.floor(Math.random() * 3);
+      let startX, startY, angle;
+
+      switch (edge) {
+        case 0: // top
+          startX = Math.random() * window.innerWidth;
+          startY = -20;
+          angle = 30 + Math.random() * 30;
+          break;
+        case 1: // left
+          startX = -20;
+          startY = Math.random() * (window.innerHeight / 2);
+          angle = 15 + Math.random() * 30;
+          break;
+        case 2: // right
+        default:
+          startX = window.innerWidth + 20;
+          startY = Math.random() * (window.innerHeight / 2);
+          angle = 195 + Math.random() * 30;
+          break;
+      }
+
+      return { startX, startY, angle };
+    }
+
+    function createShootingStar(forceComet = false) {
+      const { startX, startY, angle } = generateStartPosition();
+      const isComet = forceComet || Math.random() < 0.2;
+      const baseSize = isComet ? 5 + Math.random() * 2 : 2 + Math.random() * 2;
+      // Treat "speed" as the travel duration in seconds, like in shooting-star.tsx
+      const duration = isComet ? 4 + Math.random() : 3.2 + Math.random() * 0.6;
+
+      const distance = Math.max(window.innerWidth, window.innerHeight) * 1.5;
+      const angleRad = (angle * Math.PI) / 180;
+      const totalFrames = duration * 60; // approx 60fps
+      const vx = (Math.cos(angleRad) * distance) / totalFrames;
+      const vy = (Math.sin(angleRad) * distance) / totalFrames;
+
+      return {
+        x: startX,
+        y: startY,
+        size: baseSize,
+        angle,
+        duration,
+        vx,
+        vy,
+        life: 0,
+        maxLife: totalFrames,
+        isComet,
+      };
+    }
+
+    function updateParticles() {
+      const w = canvas.width / dpr;
+      const h = canvas.height / dpr;
+
+      particles.forEach((p, i) => {
+        const edge = [
+          p.x + p.translateX - p.size,
+          w - p.x - p.translateX - p.size,
+          p.y + p.translateY - p.size,
+          h - p.y - p.translateY - p.size,
+        ];
+        const closestEdge = edge.reduce((a, b) => Math.min(a, b));
+        const remapClosestEdge = +remapValue(closestEdge, 0, 20, 0, 1).toFixed(
+          2
+        );
+
+        if (mouse.isPressed) {
+          const dx = p.x - mouse.x - w / 2;
+          const dy = p.y - mouse.y - h / 2;
+          const distance = Math.sqrt(dx * dx + dy * dy) || 1;
+          const force = Math.max(100 - distance, 0) / 10;
+          p.dx += (dx / distance) * force * 0.2;
+          p.dy += (dy / distance) * force * 0.2;
+        }
+
+        p.dx *= 0.95;
+        p.dy *= 0.95;
+        p.x += p.dx;
+        p.y += p.dy;
+
+        if (remapClosestEdge > 1) {
+          p.alpha += 0.02;
+          if (p.alpha > p.targetAlpha) p.alpha = p.targetAlpha;
+        } else {
+          p.alpha = p.targetAlpha * remapClosestEdge;
+        }
+
+        const magnetism = mouse.isPressed ? p.magnetism * 0.5 : p.magnetism;
+        p.translateX +=
+          (mouse.x / (config.staticity / magnetism) - p.translateX) /
+          config.ease;
+        p.translateY +=
+          (mouse.y / (config.staticity / magnetism) - p.translateY) /
+          config.ease;
+
+        if (
+          p.x < -p.size ||
+          p.x > w + p.size ||
+          p.y < -p.size ||
+          p.y > h + p.size
+        ) {
+          particles[i] = createParticle();
+        }
+      });
+    }
+
+    function updateShootingStars() {
+      if (Math.random() < 0.035) {
+        shootingStars.push(createShootingStar());
+      }
+
+      const w = canvas.width / dpr;
+      const h = canvas.height / dpr;
+
+      for (let i = shootingStars.length - 1; i >= 0; i--) {
+        const s = shootingStars[i];
+        s.x += s.vx;
+        s.y += s.vy;
+        // life is measured in frames, aligned with maxLife
+        s.life += 1;
+
+        if (
+          s.x < -100 ||
+          s.x > w + 100 ||
+          s.y < -100 ||
+          s.y > h + 100 ||
+          s.life > s.maxLife
+        ) {
+          shootingStars.splice(i, 1);
+        }
+      }
+    }
+
+    function drawParticles() {
+      particles.forEach((p) => {
+        ctx.save();
+        ctx.translate(p.translateX, p.translateY);
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 255, 255, ${p.alpha})`;
+        ctx.fill();
+        ctx.restore();
+      });
+    }
+
+    function drawShootingStars() {
+      shootingStars.forEach((s) => {
+        const alpha = 1 - s.life / s.maxLife;
+
+        // main body
+        ctx.save();
+        ctx.translate(s.x, s.y);
+        ctx.rotate((s.angle * Math.PI) / 180);
+
+        const gradient = ctx.createLinearGradient(0, 0, -150, 0);
+        if (s.isComet) {
+          gradient.addColorStop(0, `rgba(255, 255, 255, ${alpha})`);
+          gradient.addColorStop(0.4, `rgba(255, 215, 0, ${alpha * 0.6})`);
+          gradient.addColorStop(1, `rgba(255, 69, 0, 0)`);
+        } else {
+          gradient.addColorStop(0, `rgba(255, 255, 255, ${alpha})`);
+          gradient.addColorStop(0.4, `rgba(255, 255, 255, ${alpha * 0.5})`);
+          gradient.addColorStop(1, `rgba(255, 255, 255, 0)`);
+        }
+
+        // head
+        ctx.beginPath();
+        ctx.arc(0, 0, s.size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+        ctx.shadowColor = 'rgba(255,255,255,0.8)';
+        ctx.shadowBlur = s.isComet ? 12 : 6;
+        ctx.fill();
+
+        // tail
+        ctx.beginPath();
+        ctx.moveTo(0, -s.size / 2);
+        ctx.lineTo(-150, 0);
+        ctx.lineTo(0, s.size / 2);
+        ctx.closePath();
+        ctx.fillStyle = gradient;
+        ctx.fill();
+
+        ctx.restore();
+      });
+    }
+
+    function animate() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      updateParticles();
+      updateShootingStars();
+      drawParticles();
+      drawShootingStars();
+      requestAnimationFrame(animate);
+    }
+
+    initParticles();
+    animate();
+  });
+
+  // Artwork Modal Functionality
+  document.addEventListener('DOMContentLoaded', () => {
+    const modal = document.getElementById('artwork-modal');
+    const modalImage = document.getElementById('modal-image') as HTMLImageElement | null;
+    const modalTitle = document.getElementById('modal-title');
+    const closeButton = document.getElementById('modal-close');
+
+    const artworks = [
+      { src: '/images/home/h1.jpeg', title: 'Artwork 1' },
+      { src: '/images/home/h2.jpeg', title: 'Artwork 2' },
+      { src: '/images/home/h3.jpeg', title: 'Artwork 3' },
+      { src: '/images/home/h4.jpeg', title: 'Artwork 4' },
+      { src: '/images/home/h5.jpeg', title: 'Artwork 5' },
+      { src: '/images/home/h6.jpeg', title: 'Artwork 6' },
+    ];
+
+    if (!modal || !modalImage || !modalTitle) {
+      console.error('Modal elements not found');
+      return;
+    }
+
+    // Open modal when artwork is clicked
+    const artworkOverlays = document.querySelectorAll('.absolute.inset-0.w-full.h-full.cursor-pointer');
+    artworkOverlays.forEach((overlay, index) => {
+      overlay.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const artwork = artworks[index];
+
+        if (artwork) {
+          modalImage.src = artwork.src;
+          modalImage.alt = artwork.title;
+          modalTitle.textContent = artwork.title;
+          // Use inline style to ensure display works
+          modal.style.display = 'flex';
+          document.body.style.overflow = 'hidden'; // Prevent background scrolling
+        }
+      });
+    });
+
+    // Close modal functions
+    const closeModal = () => {
+      if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = ''; // Restore scrolling
+      }
+    };
+
+    if (closeButton) {
+      closeButton.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        closeModal();
+      });
+    }
+
+    // Close modal when clicking outside the image
+    if (modal) {
+      modal.addEventListener('click', (e) => {
+        // Only close if clicking directly on the modal backdrop, not on child elements
+        if (e.target === modal) {
+          closeModal();
+        }
+      });
+    }
+
+    // Close modal with Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && modal && modal.style.display !== 'none') {
+        closeModal();
+      }
+    });
+  });
+</script>
+
+<style>
+  /* CSS Typewriter substitute */
+  .typing-effect {
+    overflow: hidden;
+    border-right: .15em solid orange;
+    white-space: nowrap;
+    animation: typing 3.5s steps(40, end), blink-caret .75s step-end infinite;
+  }
+
+  @keyframes typing {
+    from { width: 0 }
+    to { width: 100% }
+  }
+
+  @keyframes blink-caret {
+    from, to { border-color: transparent }
+    50% { border-color: orange; }
+  }
+
+  /* Modal animations */
+  #artwork-modal {
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  #modal-image {
+    animation: zoomIn 0.3s ease-out;
+  }
+
+  @keyframes zoomIn {
+    from {
+      transform: scale(0.9);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+</style>

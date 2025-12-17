@@ -1,0 +1,365 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import { supabase } from "../../lib/supabase";
+
+// Fetch booking statistics
+let pendingCount = 0;
+let acceptedCount = 0;
+let deniedCount = 0;
+let totalBookings = 0;
+let recentBookings: any[] = [];
+
+try {
+    // Get counts by status
+    const { count: pending } = await supabase
+        .from("bookings")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "pending");
+
+    const { count: accepted } = await supabase
+        .from("bookings")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "accepted");
+
+    const { count: denied } = await supabase
+        .from("bookings")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "denied");
+
+    pendingCount = pending || 0;
+    acceptedCount = accepted || 0;
+    deniedCount = denied || 0;
+    totalBookings = pendingCount + acceptedCount + deniedCount;
+
+    // Get recent bookings
+    const { data: recent } = await supabase
+        .from("bookings")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(5);
+
+    recentBookings = recent || [];
+} catch (error) {
+    console.error("Error fetching dashboard data:", error);
+}
+
+// Format date helper
+function formatDate(dateString: string) {
+    return new Date(dateString).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+    });
+}
+
+function getStatusColor(status: string) {
+    switch (status) {
+        case "pending":
+            return "bg-yellow-100 text-yellow-800";
+        case "accepted":
+            return "bg-green-100 text-green-800";
+        case "denied":
+            return "bg-red-100 text-red-800";
+        default:
+            return "bg-gray-100 text-gray-800";
+    }
+}
+---
+
+<AdminLayout title="Dashboard">
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <!-- Total Bookings -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Total Bookings
+                    </p>
+                    <p class="text-3xl font-bold text-gray-900 dark:text-white mt-1">
+                        {totalBookings}
+                    </p>
+                </div>
+                <div class="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-full">
+                    <svg
+                        class="w-6 h-6 text-purple-600 dark:text-purple-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                        ></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pending -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Pending
+                    </p>
+                    <p class="text-3xl font-bold text-yellow-600 mt-1">
+                        {pendingCount}
+                    </p>
+                </div>
+                <div class="p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-full">
+                    <svg
+                        class="w-6 h-6 text-yellow-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                        ></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Accepted -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Accepted
+                    </p>
+                    <p class="text-3xl font-bold text-green-600 mt-1">
+                        {acceptedCount}
+                    </p>
+                </div>
+                <div class="p-3 bg-green-100 dark:bg-green-900/30 rounded-full">
+                    <svg
+                        class="w-6 h-6 text-green-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                        ></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Denied -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Denied
+                    </p>
+                    <p class="text-3xl font-bold text-red-600 mt-1">
+                        {deniedCount}
+                    </p>
+                </div>
+                <div class="p-3 bg-red-100 dark:bg-red-900/30 rounded-full">
+                    <svg
+                        class="w-6 h-6 text-red-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+                        ></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Bookings -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                Recent Bookings
+            </h2>
+            <a
+                href="/admin/bookings"
+                class="text-sm text-purple-600 hover:text-purple-700 font-medium"
+            >
+                View All →
+            </a>
+        </div>
+
+        {
+            recentBookings.length > 0 ? (
+                <div class="divide-y divide-gray-200 dark:divide-gray-700">
+                    {recentBookings.map((booking) => (
+                        <a
+                            href={`/admin/bookings/${booking.id}`}
+                            class="flex items-center justify-between px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                        >
+                            <div class="flex items-center gap-4">
+                                <div class="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center">
+                                    <span class="text-purple-600 dark:text-purple-400 font-semibold">
+                                        {booking.first_name?.[0]?.toUpperCase()}
+                                        {booking.last_name?.[0]?.toUpperCase()}
+                                    </span>
+                                </div>
+                                <div>
+                                    <p class="font-medium text-gray-900 dark:text-white">
+                                        {booking.first_name} {booking.last_name}
+                                    </p>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                                        {booking.tattoo_idea?.substring(0, 50)}
+                                        {booking.tattoo_idea?.length > 50
+                                            ? "..."
+                                            : ""}
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <span
+                                    class={`px-3 py-1 rounded-full text-xs font-medium capitalize ${getStatusColor(booking.status)}`}
+                                >
+                                    {booking.status}
+                                </span>
+                                <span class="text-sm text-gray-500 dark:text-gray-400">
+                                    {formatDate(booking.created_at)}
+                                </span>
+                            </div>
+                        </a>
+                    ))}
+                </div>
+            ) : (
+                <div class="px-6 py-12 text-center">
+                    <svg
+                        class="w-12 h-12 mx-auto text-gray-400 mb-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                        />
+                    </svg>
+                    <p class="text-gray-500 dark:text-gray-400">
+                        No bookings yet
+                    </p>
+                    <p class="text-sm text-gray-400 dark:text-gray-500 mt-1">
+                        Bookings will appear here when clients submit requests
+                    </p>
+                </div>
+            )
+        }
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+        <a
+            href="/admin/bookings"
+            class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow group"
+        >
+            <div class="flex items-center gap-4">
+                <div class="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg group-hover:bg-purple-200 dark:group-hover:bg-purple-900/50 transition-colors">
+                    <svg
+                        class="w-6 h-6 text-purple-600 dark:text-purple-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                        ></path>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-900 dark:text-white">
+                        Manage Bookings
+                    </h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                        Review and respond to requests
+                    </p>
+                </div>
+            </div>
+        </a>
+
+        <a
+            href="/admin/cms"
+            class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow group"
+        >
+            <div class="flex items-center gap-4">
+                <div class="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg group-hover:bg-blue-200 dark:group-hover:bg-blue-900/50 transition-colors">
+                    <svg
+                        class="w-6 h-6 text-blue-600 dark:text-blue-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                        ></path>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-900 dark:text-white">
+                        Update Content
+                    </h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                        Manage images and text
+                    </p>
+                </div>
+            </div>
+        </a>
+
+        <a
+            href="/"
+            target="_blank"
+            class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow group"
+        >
+            <div class="flex items-center gap-4">
+                <div class="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg group-hover:bg-green-200 dark:group-hover:bg-green-900/50 transition-colors">
+                    <svg
+                        class="w-6 h-6 text-green-600 dark:text-green-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                        ></path>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-900 dark:text-white">
+                        View Website
+                    </h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                        See the public site
+                    </p>
+                </div>
+            </div>
+        </a>
+    </div>
+</AdminLayout>

@@ -1,0 +1,474 @@
+---
+import Layout from "../layouts/Layout.astro";
+import CircularGallery from "../components/CircularGallery.jsx";
+import { supabase } from "../lib/supabase";
+
+// Default/fallback flash designs data
+const defaultFlashDesigns = [
+    {
+        image: "/images/home/h1.jpeg",
+        text: "Minimalist Rose",
+        description:
+            "A delicate single-line rose design perfect for wrist or ankle placement. Clean, elegant, and timeless.",
+        price: 150,
+        size: "2-3 inches",
+    },
+    {
+        image: "/images/home/h2.jpeg",
+        text: "Geometric Wolf",
+        description:
+            "A striking geometric wolf portrait combining sharp angles with natural form. Ideal for forearm or shoulder.",
+        price: 250,
+        size: "4-5 inches",
+    },
+    {
+        image: "/images/home/h3.jpeg",
+        text: "Celestial Moon",
+        description:
+            "Crescent moon with intricate dotwork details and stars. Perfect for upper arm or back placement.",
+        price: 200,
+        size: "3-4 inches",
+    },
+    {
+        image: "/images/home/h4.jpeg",
+        text: "Japanese Koi",
+        description:
+            "Traditional Japanese koi fish with flowing water elements. A symbol of perseverance and strength.",
+        price: 350,
+        size: "5-6 inches",
+    },
+    {
+        image: "/images/home/h5.jpeg",
+        text: "Butterfly Collection",
+        description:
+            "A set of three delicate butterflies in varying sizes. Can be placed together or separately.",
+        price: 180,
+        size: "1-2 inches each",
+    },
+    {
+        image: "/images/home/h6.jpeg",
+        text: "Sacred Heart",
+        description:
+            "Classic sacred heart design with modern styling. Rich in symbolism and visual impact.",
+        price: 275,
+        size: "4-5 inches",
+    },
+    {
+        image: "/images/portfolio/dragon.png",
+        text: "Dragon Serpent",
+        description:
+            "Coiling dragon with detailed scales and fierce expression. A bold statement piece.",
+        price: 400,
+        size: "6+ inches",
+    },
+    {
+        image: "/images/portfolio/naruto.png",
+        text: "Anime Flash",
+        description:
+            "Anime-inspired design with vibrant energy. Perfect for fans looking to show their passion.",
+        price: 300,
+        size: "4-5 inches",
+    },
+];
+
+// Try to fetch flash designs from database
+let flashDesigns = defaultFlashDesigns;
+
+try {
+    const { data: flashImages } = await supabase
+        .from("content_images")
+        .select("*")
+        .eq("category", "flash")
+        .order("display_order", { ascending: true });
+
+    if (flashImages && flashImages.length > 0) {
+        flashDesigns = flashImages.map((img: any) => ({
+            image: img.url,
+            text: img.title || "Flash Design",
+            description: img.description || "",
+            price: img.price || 200,
+            size: img.size || "Varies",
+        }));
+    }
+} catch (error) {
+    console.error("Error fetching flash designs:", error);
+    // Fall back to default flash designs
+}
+---
+
+<Layout title="Flash Designs | KowTattys">
+    <div class="container mx-auto px-4 py-12">
+        <div class="text-center mb-12">
+            <h1 class="text-5xl font-bold mb-4 font-doto">Flash Designs</h1>
+            <p class="text-muted-foreground text-lg max-w-2xl mx-auto">
+                Ready-to-ink designs at fixed prices. Pick your favorite and
+                book your session today!
+            </p>
+        </div>
+
+        <!-- Circular Gallery Container -->
+        <div id="gallery-container" class="gallery-wrapper">
+            <CircularGallery
+                client:only="react"
+                items={flashDesigns}
+                bend={2.5}
+                textColor="#ffffff"
+                borderRadius={0.08}
+                font="bold 28px Doto"
+                scrollSpeed={2}
+                scrollEase={0.07}
+            />
+            <div class="gallery-instructions">
+                Scroll or drag to explore • Click to view details
+            </div>
+        </div>
+
+        <!-- Design Grid (Alternative view) -->
+        <div class="mt-16">
+            <h2 class="text-3xl font-bold text-center mb-8 font-doto">
+                All Designs
+            </h2>
+            <div
+                class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+            >
+                {
+                    flashDesigns.map((design, index) => (
+                        <div
+                            class="flash-card group cursor-pointer"
+                            data-index={index}
+                        >
+                            <div class="relative aspect-square overflow-hidden rounded-lg">
+                                <img
+                                    src={design.image}
+                                    alt={design.text}
+                                    class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                                    loading="lazy"
+                                />
+                                <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                                <div class="absolute bottom-0 left-0 right-0 p-4 transform translate-y-full group-hover:translate-y-0 transition-transform duration-300">
+                                    <p class="text-white font-semibold">
+                                        {design.text}
+                                    </p>
+                                    <p class="text-green-400 font-bold">
+                                        ${design.price}
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <h3 class="font-semibold text-foreground">
+                                    {design.text}
+                                </h3>
+                                <p class="text-sm text-muted-foreground">
+                                    {design.size}
+                                </p>
+                            </div>
+                        </div>
+                    ))
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Flash Design Modal -->
+    <dialog
+        id="flash-modal"
+        class="backdrop:bg-black/80 rounded-lg p-0 bg-background max-w-4xl w-full max-h-[90vh]"
+    >
+        <div class="relative">
+            <button
+                id="close-modal"
+                class="absolute top-4 right-4 z-10 p-2 bg-black/50 text-white rounded-full hover:bg-black/70 transition-colors"
+                aria-label="Close modal"
+            >
+                <svg
+                    class="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                >
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+            <div class="grid md:grid-cols-2">
+                <div class="bg-black flex items-center justify-center p-4">
+                    <img
+                        id="modal-image"
+                        src=""
+                        alt=""
+                        class="max-h-[50vh] md:max-h-[70vh] w-auto object-contain rounded-lg"
+                    />
+                </div>
+                <div class="p-8 flex flex-col">
+                    <h2
+                        id="modal-title"
+                        class="text-2xl font-bold mb-2 font-doto"
+                    >
+                    </h2>
+                    <p
+                        id="modal-size"
+                        class="text-sm text-muted-foreground mb-4"
+                    >
+                    </p>
+                    <p id="modal-desc" class="text-muted-foreground mb-6"></p>
+
+                    <div
+                        class="mt-auto pt-6 border-t border-border flex items-center justify-between"
+                    >
+                        <div>
+                            <p class="text-sm text-muted-foreground">
+                                Fixed Price
+                            </p>
+                            <p
+                                id="modal-price"
+                                class="text-3xl font-bold text-green-500"
+                            >
+                            </p>
+                        </div>
+                        <button
+                            id="book-flash-btn"
+                            class="bg-primary text-primary-foreground px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity"
+                        >
+                            Book This Design
+                        </button>
+                    </div>
+
+                    <p class="text-xs text-muted-foreground mt-4">
+                        * Price includes consultation, design prep, and single
+                        session. Additional sessions may incur extra charges.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </dialog>
+</Layout>
+
+<script>
+    // Store flash designs data for modal access
+    const flashDesigns = [
+        {
+            image: "/images/home/h1.jpeg",
+            text: "Minimalist Rose",
+            description:
+                "A delicate single-line rose design perfect for wrist or ankle placement. Clean, elegant, and timeless.",
+            price: 150,
+            size: "2-3 inches",
+        },
+        {
+            image: "/images/home/h2.jpeg",
+            text: "Geometric Wolf",
+            description:
+                "A striking geometric wolf portrait combining sharp angles with natural form. Ideal for forearm or shoulder.",
+            price: 250,
+            size: "4-5 inches",
+        },
+        {
+            image: "/images/home/h3.jpeg",
+            text: "Celestial Moon",
+            description:
+                "Crescent moon with intricate dotwork details and stars. Perfect for upper arm or back placement.",
+            price: 200,
+            size: "3-4 inches",
+        },
+        {
+            image: "/images/home/h4.jpeg",
+            text: "Japanese Koi",
+            description:
+                "Traditional Japanese koi fish with flowing water elements. A symbol of perseverance and strength.",
+            price: 350,
+            size: "5-6 inches",
+        },
+        {
+            image: "/images/home/h5.jpeg",
+            text: "Butterfly Collection",
+            description:
+                "A set of three delicate butterflies in varying sizes. Can be placed together or separately.",
+            price: 180,
+            size: "1-2 inches each",
+        },
+        {
+            image: "/images/home/h6.jpeg",
+            text: "Sacred Heart",
+            description:
+                "Classic sacred heart design with modern styling. Rich in symbolism and visual impact.",
+            price: 275,
+            size: "4-5 inches",
+        },
+        {
+            image: "/images/portfolio/dragon.png",
+            text: "Dragon Serpent",
+            description:
+                "Coiling dragon with detailed scales and fierce expression. A bold statement piece.",
+            price: 400,
+            size: "6+ inches",
+        },
+        {
+            image: "/images/portfolio/naruto.png",
+            text: "Anime Flash",
+            description:
+                "Anime-inspired design with vibrant energy. Perfect for fans looking to show their passion.",
+            price: 300,
+            size: "4-5 inches",
+        },
+    ];
+
+    document.addEventListener("DOMContentLoaded", () => {
+        const modal = document.getElementById(
+            "flash-modal",
+        ) as HTMLDialogElement;
+        const closeBtn = document.getElementById("close-modal");
+        const modalImg = document.getElementById(
+            "modal-image",
+        ) as HTMLImageElement;
+        const modalTitle = document.getElementById("modal-title");
+        const modalDesc = document.getElementById("modal-desc");
+        const modalPrice = document.getElementById("modal-price");
+        const modalSize = document.getElementById("modal-size");
+        const bookFlashBtn = document.getElementById("book-flash-btn");
+
+        let currentDesign: (typeof flashDesigns)[0] | null = null;
+
+        function openModal(design: (typeof flashDesigns)[0]) {
+            currentDesign = design;
+            if (modalImg) modalImg.src = design.image || "";
+            if (modalTitle) modalTitle.textContent = design.text || "";
+            if (modalDesc) modalDesc.textContent = design.description || "";
+            if (modalPrice) modalPrice.textContent = `$${design.price}`;
+            if (modalSize) modalSize.textContent = `Size: ${design.size}`;
+            modal.showModal();
+        }
+
+        // Close modal on button click
+        closeBtn?.addEventListener("click", () => modal.close());
+
+        // Close on backdrop click
+        modal.addEventListener("click", (e) => {
+            const rect = modal.getBoundingClientRect();
+            if (
+                e.clientX < rect.left ||
+                e.clientX > rect.right ||
+                e.clientY < rect.top ||
+                e.clientY > rect.bottom
+            ) {
+                modal.close();
+            }
+        });
+
+        // Close on Escape key
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "Escape" && modal.open) {
+                modal.close();
+            }
+        });
+
+        // Listen for custom event from gallery items (CircularGallery)
+        window.addEventListener("openPortfolioModal", ((e: CustomEvent) => {
+            const { image, text, description } = e.detail;
+            // Find matching design by image or text
+            const design = flashDesigns.find(
+                (d) => d.image === image || d.text === text,
+            );
+            if (design) {
+                openModal(design);
+            } else {
+                // Fallback for items not in our list
+                openModal({
+                    image,
+                    text,
+                    description: description || "",
+                    price: 200,
+                    size: "Varies",
+                });
+            }
+        }) as EventListener);
+
+        // Flash card click handlers (grid view)
+        document.querySelectorAll(".flash-card").forEach((card) => {
+            card.addEventListener("click", () => {
+                const index = parseInt(
+                    card.getAttribute("data-index") || "0",
+                    10,
+                );
+                const design = flashDesigns[index];
+                if (design) {
+                    openModal(design);
+                }
+            });
+        });
+
+        // Book This Design button
+        bookFlashBtn?.addEventListener("click", () => {
+            modal.close();
+            // Store the selected design info for the booking form
+            if (currentDesign) {
+                sessionStorage.setItem(
+                    "selectedFlashDesign",
+                    JSON.stringify(currentDesign),
+                );
+            }
+            // Open the booking modal
+            window.dispatchEvent(new CustomEvent("openBookingModal"));
+        });
+    });
+</script>
+
+<style>
+    .gallery-wrapper {
+        position: relative;
+        height: 70vh;
+        min-height: 450px;
+        width: 100%;
+        margin-bottom: 2rem;
+    }
+
+    .gallery-wrapper :global(.circular-gallery) {
+        width: 100%;
+        height: 100%;
+    }
+
+    .flash-card {
+        transition: transform 0.2s ease;
+    }
+
+    .flash-card:hover {
+        transform: translateY(-4px);
+    }
+
+    #flash-modal {
+        border: none;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+
+    #flash-modal::backdrop {
+        background-color: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(4px);
+    }
+
+    #flash-modal[open] {
+        animation: modalFadeIn 0.3s ease-out;
+    }
+
+    @keyframes modalFadeIn {
+        from {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    @media (max-width: 768px) {
+        #flash-modal .grid {
+            grid-template-columns: 1fr;
+        }
+
+        #flash-modal img {
+            max-height: 40vh !important;
+        }
+    }
+</style>
