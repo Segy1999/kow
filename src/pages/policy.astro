@@ -112,38 +112,41 @@ const displayContent = policyContent || defaultContent;
 // Simple markdown-like parsing
 function parseContent(content: string) {
     return content
-        .split('\n')
-        .map(line => {
+        .split("\n")
+        .map((line) => {
             // Horizontal rule
-            if (line.trim() === '---') {
+            if (line.trim() === "---") {
                 return '<hr class="my-8 border-gray-300 dark:border-gray-600" />';
             }
             // Headers
-            if (line.startsWith('### ')) {
+            if (line.startsWith("### ")) {
                 return `<h3 class="text-xl font-bold mt-6 mb-3 font-doto text-gray-900 dark:text-white">${line.slice(4)}</h3>`;
             }
-            if (line.startsWith('## ')) {
+            if (line.startsWith("## ")) {
                 return `<h2 class="text-2xl font-bold mt-8 mb-4 font-doto text-gray-900 dark:text-white">${line.slice(3)}</h2>`;
             }
-            if (line.startsWith('# ')) {
+            if (line.startsWith("# ")) {
                 return `<h1 class="text-4xl font-bold mb-6 font-doto text-gray-900 dark:text-white">${line.slice(2)}</h1>`;
             }
             // Bold text
-            line = line.replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-gray-900 dark:text-white">$1</strong>');
+            line = line.replace(
+                /\*\*(.*?)\*\*/g,
+                '<strong class="font-semibold text-gray-900 dark:text-white">$1</strong>',
+            );
             // Italic text
-            line = line.replace(/\*(.*?)\*/g, '<em>$1</em>');
+            line = line.replace(/\*(.*?)\*/g, "<em>$1</em>");
             // List items
-            if (line.startsWith('- ')) {
+            if (line.startsWith("- ")) {
                 return `<li class="ml-4 mb-2 text-gray-700 dark:text-gray-300">${line.slice(2)}</li>`;
             }
             // Empty lines
-            if (line.trim() === '') {
-                return '<br />';
+            if (line.trim() === "") {
+                return "<br />";
             }
             // Regular paragraphs
             return `<p class="mb-4 text-gray-700 dark:text-gray-300">${line}</p>`;
         })
-        .join('\n');
+        .join("\n");
 }
 ---
 
@@ -158,27 +161,45 @@ function parseContent(content: string) {
         </div>
 
         <!-- Main Content -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 md:p-12">
+        <div
+            class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-8 md:p-12"
+        >
             <article class="prose dark:prose-invert max-w-none">
                 <Fragment set:html={parseContent(displayContent)} />
             </article>
         </div>
 
         <!-- Quick Links -->
-        <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="mt-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             <a
                 href="/contact"
                 class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow group"
             >
                 <div class="flex items-center gap-4">
-                    <div class="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg group-hover:bg-purple-200 dark:group-hover:bg-purple-900/50 transition-colors">
-                        <svg class="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    <div
+                        class="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg group-hover:bg-purple-200 dark:group-hover:bg-purple-900/50 transition-colors"
+                    >
+                        <svg
+                            class="w-6 h-6 text-purple-600 dark:text-purple-400"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                            ></path>
                         </svg>
                     </div>
                     <div>
-                        <h3 class="font-semibold text-gray-900 dark:text-white">Contact Us</h3>
-                        <p class="text-sm text-gray-500 dark:text-gray-400">Have questions?</p>
+                        <h3 class="font-semibold text-gray-900 dark:text-white">
+                            Contact Us
+                        </h3>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">
+                            Have questions?
+                        </p>
                     </div>
                 </div>
             </a>
@@ -187,14 +208,30 @@ function parseContent(content: string) {
                 class="booking-trigger bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow group text-left"
             >
                 <div class="flex items-center gap-4">
-                    <div class="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg group-hover:bg-green-200 dark:group-hover:bg-green-900/50 transition-colors">
-                        <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    <div
+                        class="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg group-hover:bg-green-200 dark:group-hover:bg-green-900/50 transition-colors"
+                    >
+                        <svg
+                            class="w-6 h-6 text-green-600 dark:text-green-400"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                            ></path>
                         </svg>
                     </div>
                     <div>
-                        <h3 class="font-semibold text-gray-900 dark:text-white">Book Now</h3>
-                        <p class="text-sm text-gray-500 dark:text-gray-400">Ready to get inked?</p>
+                        <h3 class="font-semibold text-gray-900 dark:text-white">
+                            Book Now
+                        </h3>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">
+                            Ready to get inked?
+                        </p>
                     </div>
                 </div>
             </button>
@@ -204,14 +241,30 @@ function parseContent(content: string) {
                 class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow group"
             >
                 <div class="flex items-center gap-4">
-                    <div class="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg group-hover:bg-blue-200 dark:group-hover:bg-blue-900/50 transition-colors">
-                        <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    <div
+                        class="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg group-hover:bg-blue-200 dark:group-hover:bg-blue-900/50 transition-colors"
+                    >
+                        <svg
+                            class="w-6 h-6 text-blue-600 dark:text-blue-400"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                            ></path>
                         </svg>
                     </div>
                     <div>
-                        <h3 class="font-semibold text-gray-900 dark:text-white">Flash Designs</h3>
-                        <p class="text-sm text-gray-500 dark:text-gray-400">Browse our collection</p>
+                        <h3 class="font-semibold text-gray-900 dark:text-white">
+                            Flash Designs
+                        </h3>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">
+                            Browse our collection
+                        </p>
                     </div>
                 </div>
             </a>

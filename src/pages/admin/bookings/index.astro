@@ -118,16 +118,16 @@ function getStatusColor(status: string) {
                                 <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                     Client
                                 </th>
-                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                <th class="hidden md:table-cell px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                     Tattoo Idea
                                 </th>
-                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                <th class="hidden sm:table-cell px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                     Size / Placement
                                 </th>
                                 <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                     Status
                                 </th>
-                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                <th class="hidden lg:table-cell px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                     Date
                                 </th>
                                 <th class="px-6 py-4 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -154,18 +154,18 @@ function getStatusColor(status: string) {
                                                     {booking.first_name}{" "}
                                                     {booking.last_name}
                                                 </p>
-                                                <p class="text-sm text-gray-500 dark:text-gray-400">
+                                                <p class="text-sm text-gray-500 dark:text-gray-400 hidden sm:block">
                                                     {booking.email}
                                                 </p>
                                             </div>
                                         </div>
                                     </td>
-                                    <td class="px-6 py-4">
+                                    <td class="hidden md:table-cell px-6 py-4">
                                         <p class="text-gray-900 dark:text-white max-w-xs truncate">
                                             {booking.tattoo_idea}
                                         </p>
                                     </td>
-                                    <td class="px-6 py-4">
+                                    <td class="hidden sm:table-cell px-6 py-4">
                                         <p class="text-gray-900 dark:text-white">
                                             {booking.tattoo_size}
                                         </p>
@@ -180,7 +180,7 @@ function getStatusColor(status: string) {
                                             {booking.status}
                                         </span>
                                     </td>
-                                    <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                                    <td class="hidden lg:table-cell px-6 py-4 text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
                                         {formatDate(booking.created_at)}
                                     </td>
                                     <td class="px-6 py-4 text-right">
@@ -264,20 +264,27 @@ function getStatusColor(status: string) {
     }
 
     <!-- Status Update Modal -->
-    <dialog
-        id="status-modal"
-        class="fixed inset-0 z-50 bg-transparent p-4"
-    >
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full mx-auto mt-20 p-6">
-            <h3 id="modal-title" class="text-xl font-bold text-gray-900 dark:text-white mb-4">
+    <dialog id="status-modal" class="fixed inset-0 z-50 bg-transparent p-4">
+        <div
+            class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full mx-auto mt-20 p-6"
+        >
+            <h3
+                id="modal-title"
+                class="text-xl font-bold text-gray-900 dark:text-white mb-4"
+            >
                 Update Booking Status
             </h3>
-            <p id="modal-description" class="text-gray-600 dark:text-gray-400 mb-6">
+            <p
+                id="modal-description"
+                class="text-gray-600 dark:text-gray-400 mb-6"
+            >
                 Are you sure you want to update this booking?
             </p>
 
             <div class="mb-6">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label
+                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                >
                     Admin Notes (Optional)
                 </label>
                 <textarea
@@ -306,11 +313,10 @@ function getStatusColor(status: string) {
     </dialog>
 
     <!-- Client Link Modal -->
-    <dialog
-        id="link-modal"
-        class="fixed inset-0 z-50 bg-transparent p-4"
-    >
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-lg w-full mx-auto mt-20 p-6">
+    <dialog id="link-modal" class="fixed inset-0 z-50 bg-transparent p-4">
+        <div
+            class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-lg w-full mx-auto mt-20 p-6"
+        >
             <div class="flex items-center gap-3 mb-4">
                 <div class="p-2 bg-green-100 dark:bg-green-900/30 rounded-full">
                     <svg
@@ -333,7 +339,8 @@ function getStatusColor(status: string) {
             </div>
 
             <p class="text-gray-600 dark:text-gray-400 mb-4">
-                Share this link with the client so they can view their booking status and chat with you:
+                Share this link with the client so they can view their booking
+                status and chat with you:
             </p>
 
             <div class="flex gap-2 mb-6">
@@ -389,11 +396,7 @@ function getStatusColor(status: string) {
 
             // Update active state
             filterBtns.forEach((b) => {
-                b.classList.remove(
-                    "active",
-                    "bg-purple-600",
-                    "text-white",
-                );
+                b.classList.remove("active", "bg-purple-600", "text-white");
                 b.classList.add(
                     "bg-gray-200",
                     "dark:bg-gray-700",
@@ -422,16 +425,24 @@ function getStatusColor(status: string) {
     });
 
     // Status update modal
-    const statusModal = document.getElementById("status-modal") as HTMLDialogElement;
+    const statusModal = document.getElementById(
+        "status-modal",
+    ) as HTMLDialogElement;
     const modalTitle = document.getElementById("modal-title");
     const modalDescription = document.getElementById("modal-description");
     const modalCancel = document.getElementById("modal-cancel");
     const modalConfirm = document.getElementById("modal-confirm");
-    const adminNotes = document.getElementById("admin-notes") as HTMLTextAreaElement;
+    const adminNotes = document.getElementById(
+        "admin-notes",
+    ) as HTMLTextAreaElement;
 
     // Link modal
-    const linkModal = document.getElementById("link-modal") as HTMLDialogElement;
-    const clientLinkInput = document.getElementById("client-link") as HTMLInputElement;
+    const linkModal = document.getElementById(
+        "link-modal",
+    ) as HTMLDialogElement;
+    const clientLinkInput = document.getElementById(
+        "client-link",
+    ) as HTMLInputElement;
     const copyLinkBtn = document.getElementById("copy-link");
     const linkModalClose = document.getElementById("link-modal-close");
 
@@ -451,7 +462,10 @@ function getStatusColor(status: string) {
                     "This will accept the booking and generate a client access link.";
             if (modalConfirm) {
                 modalConfirm.classList.remove("bg-red-600", "hover:bg-red-700");
-                modalConfirm.classList.add("bg-green-600", "hover:bg-green-700");
+                modalConfirm.classList.add(
+                    "bg-green-600",
+                    "hover:bg-green-700",
+                );
                 modalConfirm.textContent = "Accept";
             }
 
@@ -472,7 +486,10 @@ function getStatusColor(status: string) {
                 modalDescription.textContent =
                     "This will deny the booking request. You can add a reason in the notes.";
             if (modalConfirm) {
-                modalConfirm.classList.remove("bg-green-600", "hover:bg-green-700");
+                modalConfirm.classList.remove(
+                    "bg-green-600",
+                    "hover:bg-green-700",
+                );
                 modalConfirm.classList.add("bg-red-600", "hover:bg-red-700");
                 modalConfirm.textContent = "Deny";
             }
@@ -525,9 +542,12 @@ function getStatusColor(status: string) {
             }
 
             // Reload page to show updated status
-            setTimeout(() => {
-                window.location.reload();
-            }, currentAction === "accept" ? 0 : 500);
+            setTimeout(
+                () => {
+                    window.location.reload();
+                },
+                currentAction === "accept" ? 0 : 500,
+            );
         } catch (err) {
             console.error("Error updating booking:", err);
             alert("Failed to update booking. Please try again.");

@@ -193,16 +193,16 @@ try {
                         d="M6 18L18 6M6 6l12 12"></path>
                 </svg>
             </button>
-            <div class="grid md:grid-cols-2">
+            <div class="flex flex-col md:grid md:grid-cols-2">
                 <div class="bg-black flex items-center justify-center p-4">
                     <img
                         id="modal-image"
                         src=""
                         alt=""
-                        class="max-h-[50vh] md:max-h-[70vh] w-auto object-contain rounded-lg"
+                        class="max-h-[40dvh] md:max-h-[70vh] w-auto object-contain rounded-lg shadow-2xl"
                     />
                 </div>
-                <div class="p-8 flex flex-col">
+                <div class="p-5 sm:p-8 flex flex-col">
                     <h2
                         id="modal-title"
                         class="text-2xl font-bold mb-2 font-doto"
@@ -216,7 +216,7 @@ try {
                     <p id="modal-desc" class="text-muted-foreground mb-6"></p>
 
                     <div
-                        class="mt-auto pt-6 border-t border-border flex items-center justify-between"
+                        class="mt-auto pt-6 border-t border-border flex flex-wrap gap-4 items-center justify-between"
                     >
                         <div>
                             <p class="text-sm text-muted-foreground">

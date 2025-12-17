@@ -1,8 +1,9 @@
 ﻿--- astro.config.mjs
 
-import { defineConfig } from 'astro/config';
-import tailwind from '@astrojs/tailwind';
-import react from '@astrojs/react';
+import { defineConfig } from "astro/config";
+import tailwind from "@astrojs/tailwind";
+import react from "@astrojs/react";
+import netlify from "@astrojs/netlify";
 
 // https://astro.build/config
 export default defineConfig({
@@ -11,15 +12,17 @@ export default defineConfig({
       applyBaseStyles: true,
       nesting: true,
     }),
-    react()
+    react(),
   ],
-  output: 'static',
+  output: "server",
+  adapter: netlify(),
   vite: {
     css: {
-      devSourcemap: true
-    }
-  }
+      devSourcemap: true,
+    },
+  },
 });
+
 
 --- postcss.config.cjs
 
@@ -330,11 +333,11 @@ declare module 'astro:content' {
 	>;
 
 	type ContentEntryMap = {
-		
+
 	};
 
 	type DataEntryMap = {
-		
+
 	};
 
 	type AnyEntryMap = ContentEntryMap & DataEntryMap;
@@ -373,7 +376,7 @@ declare module 'astro:content' {
 
 --- .astro\data-store.json
 
-[["Map",1,2],"meta::meta",["Map",3,4,5,6],"astro-version","5.16.5","astro-config-digest","{\"root\":{},\"srcDir\":{},\"publicDir\":{},\"outDir\":{},\"cacheDir\":{},\"compressHTML\":true,\"base\":\"/\",\"trailingSlash\":\"ignore\",\"output\":\"static\",\"scopedStyleStrategy\":\"attribute\",\"build\":{\"format\":\"directory\",\"client\":{},\"server\":{},\"assets\":\"_astro\",\"serverEntry\":\"entry.mjs\",\"redirects\":true,\"inlineStylesheets\":\"auto\",\"concurrency\":1},\"server\":{\"open\":false,\"host\":false,\"port\":4321,\"streaming\":true,\"allowedHosts\":[]},\"redirects\":{},\"image\":{\"endpoint\":{\"route\":\"/_image\"},\"service\":{\"entrypoint\":\"astro/assets/services/sharp\",\"config\":{}},\"domains\":[],\"remotePatterns\":[],\"responsiveStyles\":false},\"devToolbar\":{\"enabled\":true},\"markdown\":{\"syntaxHighlight\":{\"type\":\"shiki\",\"excludeLangs\":[\"math\"]},\"shikiConfig\":{\"langs\":[],\"langAlias\":{},\"theme\":\"github-dark\",\"themes\":{},\"wrap\":false,\"transformers\":[]},\"remarkPlugins\":[],\"rehypePlugins\":[],\"remarkRehype\":{},\"gfm\":true,\"smartypants\":true},\"security\":{\"checkOrigin\":true,\"allowedDomains\":[]},\"env\":{\"schema\":{},\"validateSecrets\":false},\"experimental\":{\"clientPrerender\":false,\"contentIntellisense\":false,\"headingIdCompat\":false,\"preserveScriptOrder\":false,\"liveContentCollections\":false,\"csp\":false,\"staticImportMetaEnv\":false,\"chromeDevtoolsWorkspace\":false,\"failOnPrerenderConflict\":false,\"svgo\":false},\"legacy\":{\"collections\":false}}"]
+[["Map",1,2],"meta::meta",["Map",3,4,5,6],"astro-version","5.16.5","astro-config-digest","{\"root\":{},\"srcDir\":{},\"publicDir\":{},\"outDir\":{},\"cacheDir\":{},\"compressHTML\":true,\"base\":\"/\",\"trailingSlash\":\"ignore\",\"output\":\"server\",\"scopedStyleStrategy\":\"attribute\",\"build\":{\"format\":\"directory\",\"client\":{},\"server\":{},\"assets\":\"_astro\",\"serverEntry\":\"entry.mjs\",\"redirects\":false,\"inlineStylesheets\":\"auto\",\"concurrency\":1},\"server\":{\"open\":false,\"host\":false,\"port\":4321,\"streaming\":true,\"allowedHosts\":[]},\"redirects\":{},\"image\":{\"endpoint\":{\"route\":\"/_image\",\"entrypoint\":\"astro/assets/endpoint/dev\"},\"service\":{\"entrypoint\":\"astro/assets/services/sharp\",\"config\":{}},\"domains\":[],\"remotePatterns\":[],\"responsiveStyles\":false},\"devToolbar\":{\"enabled\":true},\"markdown\":{\"syntaxHighlight\":{\"type\":\"shiki\",\"excludeLangs\":[\"math\"]},\"shikiConfig\":{\"langs\":[],\"langAlias\":{},\"theme\":\"github-dark\",\"themes\":{},\"wrap\":false,\"transformers\":[]},\"remarkPlugins\":[],\"rehypePlugins\":[],\"remarkRehype\":{},\"gfm\":true,\"smartypants\":true},\"security\":{\"checkOrigin\":true,\"allowedDomains\":[]},\"env\":{\"schema\":{},\"validateSecrets\":false},\"experimental\":{\"clientPrerender\":false,\"contentIntellisense\":false,\"headingIdCompat\":false,\"preserveScriptOrder\":false,\"liveContentCollections\":false,\"csp\":false,\"staticImportMetaEnv\":false,\"chromeDevtoolsWorkspace\":false,\"failOnPrerenderConflict\":false,\"svgo\":false},\"legacy\":{\"collections\":false},\"session\":{\"driver\":\"fs-lite\",\"options\":{\"base\":\"C:\\\\Users\\\\Lenovo\\\\Desktop\\\\kowtattys-astro\\\\node_modules\\\\.astro\\\\sessions\"}}}"]
 
 --- .astro\settings.json
 
@@ -386,6 +389,78 @@ declare module 'astro:content' {
 --- .astro\types.d.ts
 
 /// <reference types="astro/client" />
+
+
+--- src\env.d.ts
+
+/// <reference path="../.astro/types.d.ts" />
+/// <reference types="astro/client" />
+
+interface ImportMetaEnv {
+  readonly PUBLIC_SUPABASE_URL: string;
+  readonly PUBLIC_SUPABASE_ANON_KEY: string;
+  readonly SUPABASE_SERVICE_ROLE_KEY: string;
+}
+
+interface ImportMeta {
+  readonly env: ImportMetaEnv;
+}
+
+declare namespace App {
+  interface Locals {
+    user: import("@supabase/supabase-js").User | null;
+    session: import("@supabase/supabase-js").Session | null;
+  }
+}
+
+
+--- src\middleware.ts
+
+import { defineMiddleware } from "astro:middleware";
+import { supabase } from "./lib/supabase";
+
+/**
+ * Authentication middleware for admin routes.
+ * This runs on every request in SSR mode.
+ */
+export const onRequest = defineMiddleware(
+  async ({ url, redirect, locals, cookies }, next) => {
+    // Check if the current request is for an admin page
+    const isAdminPath = url.pathname.startsWith("/admin");
+    const isLoginPage = url.pathname === "/admin/login";
+
+    // Handle Supabase auth tokens from cookies for SSR
+    const accessToken = cookies.get("sb-access-token")?.value;
+    const refreshToken = cookies.get("sb-refresh-token")?.value;
+
+    if (accessToken && refreshToken) {
+      await supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      });
+    }
+
+    // If it's an admin route and not the login page, verify authentication
+    if (isAdminPath && !isLoginPage) {
+      // Check for an active session
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session) {
+        // No active session found, redirect to the login page
+        return redirect("/admin/login");
+      }
+
+      // Pass session/user data to the page through locals if needed
+      locals.user = session.user;
+      locals.session = session;
+    }
+
+    // Proceed to the next middleware or the actual page rendering
+    return next();
+  },
+);
 
 
 --- src\components\BookingModal.astro
@@ -1615,12 +1690,12 @@ class Media {
         uniform sampler2D tMap;
         uniform float uBorderRadius;
         varying vec2 vUv;
-        
+
         float roundedBoxSDF(vec2 p, vec2 b, float r) {
           vec2 d = abs(p) - b;
           return length(max(d, vec2(0.0))) + min(max(d.x, d.y), 0.0) - r;
         }
-        
+
         void main() {
           vec2 ratio = vec2(
             min((uPlaneSizes.x / uPlaneSizes.y) / (uImageSizes.x / uImageSizes.y), 1.0),
@@ -1631,13 +1706,13 @@ class Media {
             vUv.y * ratio.y + (1.0 - ratio.y) * 0.5
           );
           vec4 color = texture2D(tMap, uv);
-          
+
           float d = roundedBoxSDF(vUv - 0.5, vec2(0.5 - uBorderRadius), uBorderRadius);
-          
+
           // Smooth antialiasing for edges
           float edgeSmooth = 0.002;
           float alpha = 1.0 - smoothstep(-edgeSmooth, edgeSmooth, d);
-          
+
           gl_FragColor = vec4(color.rgb, alpha);
         }
       `,
@@ -2044,6 +2119,12 @@ const currentPath = Astro.url.pathname;
             // Listen for auth state changes
             supabase.auth.onAuthStateChange((event, session) => {
                 if (event === "SIGNED_OUT" || !session) {
+                    // Clear session cookies
+                    document.cookie =
+                        "sb-access-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax; secure";
+                    document.cookie =
+                        "sb-refresh-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax; secure";
+
                     window.location.href = "/admin/login";
                 }
             });
@@ -2196,7 +2277,9 @@ const currentPath = Astro.url.pathname;
                 <header
                     class="bg-white dark:bg-gray-800 shadow-sm px-8 py-4 sticky top-0 z-10"
                 >
-                    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+                    <h1
+                        class="text-2xl font-bold text-gray-900 dark:text-white"
+                    >
                         {title}
                     </h1>
                 </header>
@@ -2215,6 +2298,13 @@ const currentPath = Astro.url.pathname;
                 .getElementById("logout-btn")
                 ?.addEventListener("click", async () => {
                     await supabase.auth.signOut();
+
+                    // Clear session cookies
+                    document.cookie =
+                        "sb-access-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax; secure";
+                    document.cookie =
+                        "sb-refresh-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax; secure";
+
                     window.location.href = "/admin/login";
                 });
         </script>
@@ -2232,7 +2322,6 @@ const currentPath = Astro.url.pathname;
 </html>
 
 
---- src\layouts\Layout.astro
 
 ---
 import "../styles/global.css";
@@ -2536,18 +2625,34 @@ import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || "";
 const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || "";
+const supabaseServiceKey = import.meta.env.SUPABASE_SERVICE_ROLE_KEY || "";
+
+// In SSR mode, we use the service role key on the server for full access (bypassing RLS),
+// and the anon key on the client side.
+const isServer = import.meta.env.SSR;
+const supabaseKey = isServer
+  ? supabaseServiceKey || supabaseAnonKey
+  : supabaseAnonKey;
 
 // Validate environment variables
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn(
-    "⚠️ Supabase environment variables are not set. Please ensure PUBLIC_SUPABASE_URL and PUBLIC_SUPABASE_ANON_KEY are defined in your .env file.",
-  );
+if (!supabaseUrl || !supabaseKey) {
+  if (isServer) {
+    console.warn(
+      "⚠️ Supabase environment variables are not set. Please ensure PUBLIC_SUPABASE_URL and PUBLIC_SUPABASE_ANON_KEY (or SUPABASE_SERVICE_ROLE_KEY) are defined.",
+    );
+  }
 }
 
-// Create client only if we have valid credentials, otherwise create a dummy that will fail gracefully
+// Create client with SSR-compatible configuration
 export const supabase: SupabaseClient =
-  supabaseUrl && supabaseAnonKey
-    ? createClient(supabaseUrl, supabaseAnonKey)
+  supabaseUrl && supabaseKey
+    ? createClient(supabaseUrl, supabaseKey, {
+        auth: {
+          persistSession: !isServer,
+          autoRefreshToken: !isServer,
+          detectSessionInUrl: !isServer,
+        },
+      })
     : createClient("https://placeholder.supabase.co", "placeholder-key");
 
 // ============================================
@@ -2594,7 +2699,7 @@ export interface SiteSetting {
   id: string;
   key: string;
   value: string;
-  updated_at: string;
+  created_at: string;
 }
 
 export type MessageSenderRole = "admin" | "client";
@@ -2701,7 +2806,7 @@ export async function setSiteSetting(key: string, value: string) {
   const { data, error } = await supabase
     .from("site_settings")
     .upsert(
-      { key, value, updated_at: new Date().toISOString() },
+      { key, value, created_at: new Date().toISOString() },
       { onConflict: "key" },
     )
     .select()
@@ -4179,6 +4284,265 @@ try {
 </style>
 
 
+--- src\pages\policy.astro
+
+---
+import Layout from "../layouts/Layout.astro";
+import { supabase } from "../lib/supabase";
+
+// Fetch policy text from site_settings
+let policyContent = "";
+
+try {
+    const { data } = await supabase
+        .from("site_settings")
+        .select("value")
+        .eq("key", "policy_text")
+        .single();
+
+    policyContent = data?.value || "";
+} catch (error) {
+    console.error("Error fetching policy text:", error);
+}
+
+// Default content if nothing in database
+const defaultContent = `
+# Studio Policies & Terms
+
+Welcome to KowTattys! Please read through our policies carefully before booking your appointment. These guidelines help ensure a safe, professional, and enjoyable experience for everyone.
+
+## Booking & Deposits
+
+- A **non-refundable deposit** is required to secure your appointment
+- Deposits range from $50-$200 depending on the size and complexity of your tattoo
+- Your deposit will be applied to the final cost of your tattoo
+- Deposits are forfeited if you cancel within 48 hours of your appointment
+
+## Rescheduling Policy
+
+- Please provide at least **48 hours notice** if you need to reschedule
+- Rescheduling with less than 48 hours notice may result in loss of your deposit
+- You may reschedule up to 2 times before a new deposit is required
+- We understand emergencies happen - please communicate with us
+
+## Day of Your Appointment
+
+### Preparation
+- Get a good night's sleep before your appointment
+- Eat a substantial meal 1-2 hours before your session
+- Stay hydrated - drink plenty of water the day before and day of
+- Avoid alcohol for at least 24 hours before your appointment
+- Avoid blood thinners (aspirin, ibuprofen) for 24 hours prior
+
+### What to Bring
+- Valid government-issued photo ID
+- Your reference images (if not already submitted)
+- Comfortable clothing that allows access to the tattoo area
+- Snacks and drinks for longer sessions
+- Entertainment (phone, book, etc.) for extended sessions
+
+### Health Requirements
+- You must be **18 years or older** with valid ID
+- Inform us of any medical conditions, allergies, or medications
+- We cannot tattoo if you are pregnant or nursing
+- If you are sick, please reschedule your appointment
+- No tattoos if you have sunburn in the area to be tattooed
+
+## During Your Session
+
+- One support person is allowed; additional guests require approval
+- Please silence your phone during the tattoo process
+- Let your artist know if you need a break at any time
+- Communicate openly about your comfort level
+
+## Pricing
+
+- Prices are determined based on size, detail, placement, and time
+- Minimum charge is **$100** for any tattoo
+- Larger pieces may be quoted as a flat rate or hourly rate
+- Touch-ups within 3 months are free (if aftercare instructions were followed)
+- Cover-ups and reworks are priced on a case-by-case basis
+
+## Aftercare
+
+- You will receive detailed aftercare instructions after your session
+- Follow all aftercare instructions carefully for optimal healing
+- Healing typically takes 2-4 weeks
+- Avoid swimming, sun exposure, and soaking for 2-3 weeks
+- Contact us immediately if you notice signs of infection
+
+## Refund Policy
+
+- Deposits are non-refundable
+- We do not offer refunds on completed tattoos
+- If you are unhappy with your tattoo, please contact us to discuss options
+- Free touch-ups are available within 3 months for any healing issues
+
+## Our Commitment
+
+We are committed to providing:
+- A clean, sterile, and safe environment
+- High-quality, professional tattooing
+- Clear communication throughout your experience
+- Respect for your time, ideas, and concerns
+
+## Contact Us
+
+If you have any questions about our policies, please don't hesitate to reach out before your appointment. We're happy to address any concerns you may have.
+
+---
+
+*Last updated: January 2024*
+`;
+
+const displayContent = policyContent || defaultContent;
+
+// Simple markdown-like parsing
+function parseContent(content: string) {
+    return content
+        .split('\n')
+        .map(line => {
+            // Horizontal rule
+            if (line.trim() === '---') {
+                return '<hr class="my-8 border-gray-300 dark:border-gray-600" />';
+            }
+            // Headers
+            if (line.startsWith('### ')) {
+                return `<h3 class="text-xl font-bold mt-6 mb-3 font-doto text-gray-900 dark:text-white">${line.slice(4)}</h3>`;
+            }
+            if (line.startsWith('## ')) {
+                return `<h2 class="text-2xl font-bold mt-8 mb-4 font-doto text-gray-900 dark:text-white">${line.slice(3)}</h2>`;
+            }
+            if (line.startsWith('# ')) {
+                return `<h1 class="text-4xl font-bold mb-6 font-doto text-gray-900 dark:text-white">${line.slice(2)}</h1>`;
+            }
+            // Bold text
+            line = line.replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-gray-900 dark:text-white">$1</strong>');
+            // Italic text
+            line = line.replace(/\*(.*?)\*/g, '<em>$1</em>');
+            // List items
+            if (line.startsWith('- ')) {
+                return `<li class="ml-4 mb-2 text-gray-700 dark:text-gray-300">${line.slice(2)}</li>`;
+            }
+            // Empty lines
+            if (line.trim() === '') {
+                return '<br />';
+            }
+            // Regular paragraphs
+            return `<p class="mb-4 text-gray-700 dark:text-gray-300">${line}</p>`;
+        })
+        .join('\n');
+}
+---
+
+<Layout title="Policies & Terms | KowTattys">
+    <div class="container mx-auto px-4 py-12 max-w-4xl">
+        <!-- Hero Section -->
+        <div class="text-center mb-12">
+            <h1 class="text-5xl font-bold font-doto mb-4">Policies & Terms</h1>
+            <p class="text-xl text-muted-foreground">
+                Everything you need to know before your appointment
+            </p>
+        </div>
+
+        <!-- Main Content -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 md:p-12">
+            <article class="prose dark:prose-invert max-w-none">
+                <Fragment set:html={parseContent(displayContent)} />
+            </article>
+        </div>
+
+        <!-- Quick Links -->
+        <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <a
+                href="/contact"
+                class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow group"
+            >
+                <div class="flex items-center gap-4">
+                    <div class="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg group-hover:bg-purple-200 dark:group-hover:bg-purple-900/50 transition-colors">
+                        <svg class="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-900 dark:text-white">Contact Us</h3>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Have questions?</p>
+                    </div>
+                </div>
+            </a>
+
+            <button
+                class="booking-trigger bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow group text-left"
+            >
+                <div class="flex items-center gap-4">
+                    <div class="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg group-hover:bg-green-200 dark:group-hover:bg-green-900/50 transition-colors">
+                        <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-900 dark:text-white">Book Now</h3>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Ready to get inked?</p>
+                    </div>
+                </div>
+            </button>
+
+            <a
+                href="/flash-designs"
+                class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow group"
+            >
+                <div class="flex items-center gap-4">
+                    <div class="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg group-hover:bg-blue-200 dark:group-hover:bg-blue-900/50 transition-colors">
+                        <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-900 dark:text-white">Flash Designs</h3>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Browse our collection</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <!-- Back to Home -->
+        <div class="text-center mt-8">
+            <a href="/" class="text-purple-600 hover:underline">
+                ← Back to Homepage
+            </a>
+        </div>
+    </div>
+</Layout>
+
+<style>
+    article h1 {
+        @apply text-4xl font-bold mb-6;
+    }
+
+    article h2 {
+        @apply text-2xl font-bold mt-8 mb-4;
+    }
+
+    article h3 {
+        @apply text-xl font-bold mt-6 mb-3;
+    }
+
+    article p {
+        @apply mb-4;
+    }
+
+    article ul {
+        @apply list-disc list-inside mb-4;
+    }
+
+    article li {
+        @apply mb-2;
+    }
+</style>
+
+
+--- src\pages\portfolio.astro
+
 ---
 import Layout from "../layouts/Layout.astro";
 import CircularGallery from "../components/CircularGallery.jsx";
@@ -4357,3 +4721,3766 @@ try {
     }
 </style>
 
+
+--- src\pages\admin\index.astro
+
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import { supabase } from "../../lib/supabase";
+
+// Fetch booking statistics
+let pendingCount = 0;
+let acceptedCount = 0;
+let deniedCount = 0;
+let totalBookings = 0;
+let recentBookings: any[] = [];
+
+try {
+    // Get counts by status
+    const { count: pending } = await supabase
+        .from("bookings")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "pending");
+
+    const { count: accepted } = await supabase
+        .from("bookings")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "accepted");
+
+    const { count: denied } = await supabase
+        .from("bookings")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "denied");
+
+    pendingCount = pending || 0;
+    acceptedCount = accepted || 0;
+    deniedCount = denied || 0;
+    totalBookings = pendingCount + acceptedCount + deniedCount;
+
+    // Get recent bookings
+    const { data: recent } = await supabase
+        .from("bookings")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(5);
+
+    recentBookings = recent || [];
+} catch (error) {
+    console.error("Error fetching dashboard data:", error);
+}
+
+// Format date helper
+function formatDate(dateString: string) {
+    return new Date(dateString).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+    });
+}
+
+function getStatusColor(status: string) {
+    switch (status) {
+        case "pending":
+            return "bg-yellow-100 text-yellow-800";
+        case "accepted":
+            return "bg-green-100 text-green-800";
+        case "denied":
+            return "bg-red-100 text-red-800";
+        default:
+            return "bg-gray-100 text-gray-800";
+    }
+}
+---
+
+<AdminLayout title="Dashboard">
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <!-- Total Bookings -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Total Bookings
+                    </p>
+                    <p class="text-3xl font-bold text-gray-900 dark:text-white mt-1">
+                        {totalBookings}
+                    </p>
+                </div>
+                <div class="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-full">
+                    <svg
+                        class="w-6 h-6 text-purple-600 dark:text-purple-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                        ></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pending -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Pending
+                    </p>
+                    <p class="text-3xl font-bold text-yellow-600 mt-1">
+                        {pendingCount}
+                    </p>
+                </div>
+                <div class="p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-full">
+                    <svg
+                        class="w-6 h-6 text-yellow-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                        ></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Accepted -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Accepted
+                    </p>
+                    <p class="text-3xl font-bold text-green-600 mt-1">
+                        {acceptedCount}
+                    </p>
+                </div>
+                <div class="p-3 bg-green-100 dark:bg-green-900/30 rounded-full">
+                    <svg
+                        class="w-6 h-6 text-green-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                        ></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Denied -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Denied
+                    </p>
+                    <p class="text-3xl font-bold text-red-600 mt-1">
+                        {deniedCount}
+                    </p>
+                </div>
+                <div class="p-3 bg-red-100 dark:bg-red-900/30 rounded-full">
+                    <svg
+                        class="w-6 h-6 text-red-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+                        ></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Bookings -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                Recent Bookings
+            </h2>
+            <a
+                href="/admin/bookings"
+                class="text-sm text-purple-600 hover:text-purple-700 font-medium"
+            >
+                View All →
+            </a>
+        </div>
+
+        {
+            recentBookings.length > 0 ? (
+                <div class="divide-y divide-gray-200 dark:divide-gray-700">
+                    {recentBookings.map((booking) => (
+                        <a
+                            href={`/admin/bookings/${booking.id}`}
+                            class="flex items-center justify-between px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                        >
+                            <div class="flex items-center gap-4">
+                                <div class="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center">
+                                    <span class="text-purple-600 dark:text-purple-400 font-semibold">
+                                        {booking.first_name?.[0]?.toUpperCase()}
+                                        {booking.last_name?.[0]?.toUpperCase()}
+                                    </span>
+                                </div>
+                                <div>
+                                    <p class="font-medium text-gray-900 dark:text-white">
+                                        {booking.first_name} {booking.last_name}
+                                    </p>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                                        {booking.tattoo_idea?.substring(0, 50)}
+                                        {booking.tattoo_idea?.length > 50
+                                            ? "..."
+                                            : ""}
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <span
+                                    class={`px-3 py-1 rounded-full text-xs font-medium capitalize ${getStatusColor(booking.status)}`}
+                                >
+                                    {booking.status}
+                                </span>
+                                <span class="text-sm text-gray-500 dark:text-gray-400">
+                                    {formatDate(booking.created_at)}
+                                </span>
+                            </div>
+                        </a>
+                    ))}
+                </div>
+            ) : (
+                <div class="px-6 py-12 text-center">
+                    <svg
+                        class="w-12 h-12 mx-auto text-gray-400 mb-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                        />
+                    </svg>
+                    <p class="text-gray-500 dark:text-gray-400">
+                        No bookings yet
+                    </p>
+                    <p class="text-sm text-gray-400 dark:text-gray-500 mt-1">
+                        Bookings will appear here when clients submit requests
+                    </p>
+                </div>
+            )
+        }
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+        <a
+            href="/admin/bookings"
+            class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow group"
+        >
+            <div class="flex items-center gap-4">
+                <div class="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg group-hover:bg-purple-200 dark:group-hover:bg-purple-900/50 transition-colors">
+                    <svg
+                        class="w-6 h-6 text-purple-600 dark:text-purple-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                        ></path>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-900 dark:text-white">
+                        Manage Bookings
+                    </h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                        Review and respond to requests
+                    </p>
+                </div>
+            </div>
+        </a>
+
+        <a
+            href="/admin/cms"
+            class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow group"
+        >
+            <div class="flex items-center gap-4">
+                <div class="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg group-hover:bg-blue-200 dark:group-hover:bg-blue-900/50 transition-colors">
+                    <svg
+                        class="w-6 h-6 text-blue-600 dark:text-blue-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                        ></path>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-900 dark:text-white">
+                        Update Content
+                    </h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                        Manage images and text
+                    </p>
+                </div>
+            </div>
+        </a>
+
+        <a
+            href="/"
+            target="_blank"
+            class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow group"
+        >
+            <div class="flex items-center gap-4">
+                <div class="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg group-hover:bg-green-200 dark:group-hover:bg-green-900/50 transition-colors">
+                    <svg
+                        class="w-6 h-6 text-green-600 dark:text-green-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                        ></path>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-900 dark:text-white">
+                        View Website
+                    </h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                        See the public site
+                    </p>
+                </div>
+            </div>
+        </a>
+    </div>
+</AdminLayout>
+
+
+--- src\pages\admin\login.astro
+
+---
+import "../../styles/global.css";
+---
+
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width" />
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <title>Admin Login | KowTattys</title>
+        <meta name="robots" content="noindex, nofollow" />
+    </head>
+    <body class="bg-gray-900 min-h-screen flex items-center justify-center p-4">
+        <!-- Check if already logged in -->
+        <script>
+            import { supabase } from "../../lib/supabase";
+
+            async function checkExistingSession() {
+                const {
+                    data: { session },
+                } = await supabase.auth.getSession();
+
+                if (session) {
+                    // Sync cookies for SSR support
+                    const { access_token, refresh_token } = session;
+                    const expiration = 60 * 60 * 24 * 7; // 7 days
+                    document.cookie = `sb-access-token=${access_token}; path=/; max-age=${expiration}; SameSite=Lax; secure`;
+                    document.cookie = `sb-refresh-token=${refresh_token}; path=/; max-age=${expiration}; SameSite=Lax; secure`;
+
+                    window.location.href = "/admin";
+                }
+            }
+
+            checkExistingSession();
+        </script>
+
+        <div class="w-full max-w-md">
+            <!-- Logo -->
+            <div class="text-center mb-8">
+                <h1 class="text-4xl font-bold text-white font-doto">
+                    KowTattys
+                </h1>
+                <p class="text-gray-400 mt-2">Admin Portal</p>
+            </div>
+
+            <!-- Login Card -->
+            <div class="bg-gray-800 rounded-xl shadow-2xl p-8">
+                <h2 class="text-2xl font-bold text-white mb-6">Sign In</h2>
+
+                <!-- Error Message -->
+                <div
+                    id="error-message"
+                    class="hidden mb-4 p-4 bg-red-500/10 border border-red-500/50 rounded-lg text-red-400 text-sm"
+                >
+                </div>
+
+                <form id="login-form" class="space-y-6">
+                    <div>
+                        <label
+                            for="email"
+                            class="block text-sm font-medium text-gray-300 mb-2"
+                        >
+                            Email
+                        </label>
+                        <input
+                            type="email"
+                            id="email"
+                            name="email"
+                            required
+                            class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                            placeholder="admin@kowtattys.com"
+                        />
+                    </div>
+
+                    <div>
+                        <label
+                            for="password"
+                            class="block text-sm font-medium text-gray-300 mb-2"
+                        >
+                            Password
+                        </label>
+                        <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            required
+                            class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                            placeholder="••••••••"
+                        />
+                    </div>
+
+                    <button
+                        type="submit"
+                        id="submit-btn"
+                        class="w-full py-3 px-4 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <span id="btn-text">Sign In</span>
+                        <span id="btn-loading" class="hidden">
+                            <svg
+                                class="animate-spin h-5 w-5 mx-auto"
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                            >
+                                <circle
+                                    class="opacity-25"
+                                    cx="12"
+                                    cy="12"
+                                    r="10"
+                                    stroke="currentColor"
+                                    stroke-width="4"></circle>
+                                <path
+                                    class="opacity-75"
+                                    fill="currentColor"
+                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                ></path>
+                            </svg>
+                        </span>
+                    </button>
+                </form>
+
+                <div class="mt-6 text-center">
+                    <a
+                        href="/"
+                        class="text-sm text-gray-400 hover:text-white transition-colors"
+                    >
+                        ← Back to Website
+                    </a>
+                </div>
+            </div>
+
+            <!-- Security Notice -->
+            <p class="text-center text-gray-500 text-xs mt-6">
+                This is a secure admin area. Unauthorized access is prohibited.
+            </p>
+        </div>
+
+        <script>
+            import { supabase } from "../../lib/supabase";
+
+            const form = document.getElementById(
+                "login-form",
+            ) as HTMLFormElement;
+            const errorMessage = document.getElementById("error-message");
+            const submitBtn = document.getElementById(
+                "submit-btn",
+            ) as HTMLButtonElement;
+            const btnText = document.getElementById("btn-text");
+            const btnLoading = document.getElementById("btn-loading");
+
+            function showError(message: string) {
+                if (errorMessage) {
+                    errorMessage.textContent = message;
+                    errorMessage.classList.remove("hidden");
+                }
+            }
+
+            function hideError() {
+                if (errorMessage) {
+                    errorMessage.classList.add("hidden");
+                }
+            }
+
+            function setLoading(loading: boolean) {
+                if (submitBtn && btnText && btnLoading) {
+                    submitBtn.disabled = loading;
+                    btnText.classList.toggle("hidden", loading);
+                    btnLoading.classList.toggle("hidden", !loading);
+                }
+            }
+
+            form?.addEventListener("submit", async (e) => {
+                e.preventDefault();
+                hideError();
+                setLoading(true);
+
+                const formData = new FormData(form);
+                const email = formData.get("email") as string;
+                const password = formData.get("password") as string;
+
+                try {
+                    const { data, error } =
+                        await supabase.auth.signInWithPassword({
+                            email,
+                            password,
+                        });
+
+                    if (error) {
+                        showError(error.message);
+                        setLoading(false);
+                        return;
+                    }
+
+                    if (data.session) {
+                        // Set session cookies for SSR support
+                        const { access_token, refresh_token } = data.session;
+                        const expiration = 60 * 60 * 24 * 7; // 7 days
+                        document.cookie = `sb-access-token=${access_token}; path=/; max-age=${expiration}; SameSite=Lax; secure`;
+                        document.cookie = `sb-refresh-token=${refresh_token}; path=/; max-age=${expiration}; SameSite=Lax; secure`;
+
+                        window.location.href = "/admin";
+                    }
+                } catch (err) {
+                    showError(
+                        "An unexpected error occurred. Please try again.",
+                    );
+                    setLoading(false);
+                }
+            });
+        </script>
+
+        <style>
+            @import url("https://fonts.googleapis.com/css2?family=Doto:wght@100..900&display=swap");
+
+            .font-doto {
+                font-family: "Doto", sans-serif;
+            }
+        </style>
+    </body>
+</html>
+
+
+--- src\pages\admin\bookings\index.astro
+
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import { supabase } from "../../../lib/supabase";
+
+// Fetch all bookings
+let bookings: any[] = [];
+let error = null;
+
+try {
+    const { data, error: fetchError } = await supabase
+        .from("bookings")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+    if (fetchError) throw fetchError;
+    bookings = data || [];
+} catch (e) {
+    console.error("Error fetching bookings:", e);
+    error = e;
+}
+
+// Group bookings by status
+const pendingBookings = bookings.filter((b) => b.status === "pending");
+const acceptedBookings = bookings.filter((b) => b.status === "accepted");
+const deniedBookings = bookings.filter((b) => b.status === "denied");
+
+// Format date helper
+function formatDate(dateString: string) {
+    return new Date(dateString).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+    });
+}
+
+function getStatusColor(status: string) {
+    switch (status) {
+        case "pending":
+            return "bg-yellow-100 text-yellow-800 border-yellow-200";
+        case "accepted":
+            return "bg-green-100 text-green-800 border-green-200";
+        case "denied":
+            return "bg-red-100 text-red-800 border-red-200";
+        default:
+            return "bg-gray-100 text-gray-800 border-gray-200";
+    }
+}
+---
+
+<AdminLayout title="Bookings">
+    <!-- Filter Tabs -->
+    <div class="mb-6">
+        <div class="flex gap-2 flex-wrap">
+            <button
+                data-filter="all"
+                class="filter-btn active px-4 py-2 rounded-lg font-medium transition-colors bg-purple-600 text-white"
+            >
+                All ({bookings.length})
+            </button>
+            <button
+                data-filter="pending"
+                class="filter-btn px-4 py-2 rounded-lg font-medium transition-colors bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
+            >
+                Pending ({pendingBookings.length})
+            </button>
+            <button
+                data-filter="accepted"
+                class="filter-btn px-4 py-2 rounded-lg font-medium transition-colors bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
+            >
+                Accepted ({acceptedBookings.length})
+            </button>
+            <button
+                data-filter="denied"
+                class="filter-btn px-4 py-2 rounded-lg font-medium transition-colors bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
+            >
+                Denied ({deniedBookings.length})
+            </button>
+        </div>
+    </div>
+
+    {
+        error ? (
+            <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-6 text-center">
+                <p class="text-red-600 dark:text-red-400">
+                    Error loading bookings. Please try again.
+                </p>
+            </div>
+        ) : bookings.length === 0 ? (
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-12 text-center">
+                <svg
+                    class="w-16 h-16 mx-auto text-gray-400 mb-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                >
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                    />
+                </svg>
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                    No Bookings Yet
+                </h3>
+                <p class="text-gray-500 dark:text-gray-400">
+                    When clients submit booking requests, they'll appear here.
+                </p>
+            </div>
+        ) : (
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-50 dark:bg-gray-700/50">
+                            <tr>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Client
+                                </th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Tattoo Idea
+                                </th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Size / Placement
+                                </th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Status
+                                </th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Date
+                                </th>
+                                <th class="px-6 py-4 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Actions
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                            {bookings.map((booking) => (
+                                <tr
+                                    class="booking-row hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors"
+                                    data-status={booking.status}
+                                >
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center flex-shrink-0">
+                                                <span class="text-purple-600 dark:text-purple-400 font-semibold text-sm">
+                                                    {booking.first_name?.[0]?.toUpperCase()}
+                                                    {booking.last_name?.[0]?.toUpperCase()}
+                                                </span>
+                                            </div>
+                                            <div>
+                                                <p class="font-medium text-gray-900 dark:text-white">
+                                                    {booking.first_name}{" "}
+                                                    {booking.last_name}
+                                                </p>
+                                                <p class="text-sm text-gray-500 dark:text-gray-400">
+                                                    {booking.email}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <p class="text-gray-900 dark:text-white max-w-xs truncate">
+                                            {booking.tattoo_idea}
+                                        </p>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <p class="text-gray-900 dark:text-white">
+                                            {booking.tattoo_size}
+                                        </p>
+                                        <p class="text-sm text-gray-500 dark:text-gray-400">
+                                            {booking.tattoo_placement}
+                                        </p>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <span
+                                            class={`inline-flex px-3 py-1 rounded-full text-xs font-medium capitalize border ${getStatusColor(booking.status)}`}
+                                        >
+                                            {booking.status}
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                                        {formatDate(booking.created_at)}
+                                    </td>
+                                    <td class="px-6 py-4 text-right">
+                                        <div class="flex items-center justify-end gap-2">
+                                            {booking.status === "pending" && (
+                                                <>
+                                                    <button
+                                                        class="action-btn accept-btn p-2 text-green-600 hover:bg-green-100 dark:hover:bg-green-900/30 rounded-lg transition-colors"
+                                                        data-id={booking.id}
+                                                        title="Accept"
+                                                    >
+                                                        <svg
+                                                            class="w-5 h-5"
+                                                            fill="none"
+                                                            stroke="currentColor"
+                                                            viewBox="0 0 24 24"
+                                                        >
+                                                            <path
+                                                                stroke-linecap="round"
+                                                                stroke-linejoin="round"
+                                                                stroke-width="2"
+                                                                d="M5 13l4 4L19 7"
+                                                            />
+                                                        </svg>
+                                                    </button>
+                                                    <button
+                                                        class="action-btn deny-btn p-2 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                                                        data-id={booking.id}
+                                                        title="Deny"
+                                                    >
+                                                        <svg
+                                                            class="w-5 h-5"
+                                                            fill="none"
+                                                            stroke="currentColor"
+                                                            viewBox="0 0 24 24"
+                                                        >
+                                                            <path
+                                                                stroke-linecap="round"
+                                                                stroke-linejoin="round"
+                                                                stroke-width="2"
+                                                                d="M6 18L18 6M6 6l12 12"
+                                                            />
+                                                        </svg>
+                                                    </button>
+                                                </>
+                                            )}
+                                            <a
+                                                href={`/admin/bookings/${booking.id}`}
+                                                class="p-2 text-purple-600 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-lg transition-colors"
+                                                title="View Details"
+                                            >
+                                                <svg
+                                                    class="w-5 h-5"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    viewBox="0 0 24 24"
+                                                >
+                                                    <path
+                                                        stroke-linecap="round"
+                                                        stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                                                    />
+                                                    <path
+                                                        stroke-linecap="round"
+                                                        stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                                                    />
+                                                </svg>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        )
+    }
+
+    <!-- Status Update Modal -->
+    <dialog
+        id="status-modal"
+        class="fixed inset-0 z-50 bg-transparent p-4"
+    >
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full mx-auto mt-20 p-6">
+            <h3 id="modal-title" class="text-xl font-bold text-gray-900 dark:text-white mb-4">
+                Update Booking Status
+            </h3>
+            <p id="modal-description" class="text-gray-600 dark:text-gray-400 mb-6">
+                Are you sure you want to update this booking?
+            </p>
+
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Admin Notes (Optional)
+                </label>
+                <textarea
+                    id="admin-notes"
+                    rows="3"
+                    class="w-full px-4 py-3 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    placeholder="Add any notes about this booking..."
+                ></textarea>
+            </div>
+
+            <div class="flex justify-end gap-3">
+                <button
+                    id="modal-cancel"
+                    class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                >
+                    Cancel
+                </button>
+                <button
+                    id="modal-confirm"
+                    class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                >
+                    Confirm
+                </button>
+            </div>
+        </div>
+    </dialog>
+
+    <!-- Client Link Modal -->
+    <dialog
+        id="link-modal"
+        class="fixed inset-0 z-50 bg-transparent p-4"
+    >
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-lg w-full mx-auto mt-20 p-6">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="p-2 bg-green-100 dark:bg-green-900/30 rounded-full">
+                    <svg
+                        class="w-6 h-6 text-green-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                        ></path>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white">
+                    Booking Accepted!
+                </h3>
+            </div>
+
+            <p class="text-gray-600 dark:text-gray-400 mb-4">
+                Share this link with the client so they can view their booking status and chat with you:
+            </p>
+
+            <div class="flex gap-2 mb-6">
+                <input
+                    id="client-link"
+                    type="text"
+                    readonly
+                    class="flex-1 px-4 py-3 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white text-sm"
+                />
+                <button
+                    id="copy-link"
+                    class="px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2"
+                >
+                    <svg
+                        class="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                        ></path>
+                    </svg>
+                    Copy
+                </button>
+            </div>
+
+            <div class="flex justify-end">
+                <button
+                    id="link-modal-close"
+                    class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                >
+                    Done
+                </button>
+            </div>
+        </div>
+    </dialog>
+</AdminLayout>
+
+<script>
+    import { supabase } from "../../../lib/supabase";
+
+    // Filter functionality
+    const filterBtns = document.querySelectorAll(".filter-btn");
+    const bookingRows = document.querySelectorAll(".booking-row");
+
+    filterBtns.forEach((btn) => {
+        btn.addEventListener("click", () => {
+            const filter = btn.getAttribute("data-filter");
+
+            // Update active state
+            filterBtns.forEach((b) => {
+                b.classList.remove(
+                    "active",
+                    "bg-purple-600",
+                    "text-white",
+                );
+                b.classList.add(
+                    "bg-gray-200",
+                    "dark:bg-gray-700",
+                    "text-gray-700",
+                    "dark:text-gray-300",
+                );
+            });
+            btn.classList.add("active", "bg-purple-600", "text-white");
+            btn.classList.remove(
+                "bg-gray-200",
+                "dark:bg-gray-700",
+                "text-gray-700",
+                "dark:text-gray-300",
+            );
+
+            // Filter rows
+            bookingRows.forEach((row) => {
+                const status = row.getAttribute("data-status");
+                if (filter === "all" || status === filter) {
+                    (row as HTMLElement).style.display = "";
+                } else {
+                    (row as HTMLElement).style.display = "none";
+                }
+            });
+        });
+    });
+
+    // Status update modal
+    const statusModal = document.getElementById("status-modal") as HTMLDialogElement;
+    const modalTitle = document.getElementById("modal-title");
+    const modalDescription = document.getElementById("modal-description");
+    const modalCancel = document.getElementById("modal-cancel");
+    const modalConfirm = document.getElementById("modal-confirm");
+    const adminNotes = document.getElementById("admin-notes") as HTMLTextAreaElement;
+
+    // Link modal
+    const linkModal = document.getElementById("link-modal") as HTMLDialogElement;
+    const clientLinkInput = document.getElementById("client-link") as HTMLInputElement;
+    const copyLinkBtn = document.getElementById("copy-link");
+    const linkModalClose = document.getElementById("link-modal-close");
+
+    let currentBookingId: string | null = null;
+    let currentAction: "accept" | "deny" | null = null;
+
+    // Accept buttons
+    document.querySelectorAll(".accept-btn").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+            e.preventDefault();
+            currentBookingId = btn.getAttribute("data-id");
+            currentAction = "accept";
+
+            if (modalTitle) modalTitle.textContent = "Accept Booking";
+            if (modalDescription)
+                modalDescription.textContent =
+                    "This will accept the booking and generate a client access link.";
+            if (modalConfirm) {
+                modalConfirm.classList.remove("bg-red-600", "hover:bg-red-700");
+                modalConfirm.classList.add("bg-green-600", "hover:bg-green-700");
+                modalConfirm.textContent = "Accept";
+            }
+
+            adminNotes.value = "";
+            statusModal.showModal();
+        });
+    });
+
+    // Deny buttons
+    document.querySelectorAll(".deny-btn").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+            e.preventDefault();
+            currentBookingId = btn.getAttribute("data-id");
+            currentAction = "deny";
+
+            if (modalTitle) modalTitle.textContent = "Deny Booking";
+            if (modalDescription)
+                modalDescription.textContent =
+                    "This will deny the booking request. You can add a reason in the notes.";
+            if (modalConfirm) {
+                modalConfirm.classList.remove("bg-green-600", "hover:bg-green-700");
+                modalConfirm.classList.add("bg-red-600", "hover:bg-red-700");
+                modalConfirm.textContent = "Deny";
+            }
+
+            adminNotes.value = "";
+            statusModal.showModal();
+        });
+    });
+
+    // Modal cancel
+    modalCancel?.addEventListener("click", () => {
+        statusModal.close();
+        currentBookingId = null;
+        currentAction = null;
+    });
+
+    // Modal confirm
+    modalConfirm?.addEventListener("click", async () => {
+        if (!currentBookingId || !currentAction) return;
+
+        const newStatus = currentAction === "accept" ? "accepted" : "denied";
+        const notes = adminNotes.value.trim();
+
+        try {
+            const updates: any = { status: newStatus };
+            if (notes) updates.admin_notes = notes;
+
+            // Generate client access token if accepting
+            if (currentAction === "accept") {
+                updates.client_access_token = crypto.randomUUID();
+            }
+
+            const { data, error } = await supabase
+                .from("bookings")
+                .update(updates)
+                .eq("id", currentBookingId)
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            statusModal.close();
+
+            // Show link modal if accepted
+            if (currentAction === "accept" && data?.client_access_token) {
+                const baseUrl = window.location.origin;
+                const clientLink = `${baseUrl}/my-booking/${data.client_access_token}`;
+                clientLinkInput.value = clientLink;
+                linkModal.showModal();
+            }
+
+            // Reload page to show updated status
+            setTimeout(() => {
+                window.location.reload();
+            }, currentAction === "accept" ? 0 : 500);
+        } catch (err) {
+            console.error("Error updating booking:", err);
+            alert("Failed to update booking. Please try again.");
+        }
+    });
+
+    // Copy link
+    copyLinkBtn?.addEventListener("click", async () => {
+        try {
+            await navigator.clipboard.writeText(clientLinkInput.value);
+            copyLinkBtn.innerHTML = `
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                Copied!
+            `;
+            setTimeout(() => {
+                copyLinkBtn.innerHTML = `
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                    </svg>
+                    Copy
+                `;
+            }, 2000);
+        } catch (err) {
+            console.error("Failed to copy:", err);
+        }
+    });
+
+    // Link modal close
+    linkModalClose?.addEventListener("click", () => {
+        linkModal.close();
+        window.location.reload();
+    });
+
+    // Close modals on backdrop click
+    statusModal?.addEventListener("click", (e) => {
+        if (e.target === statusModal) {
+            statusModal.close();
+        }
+    });
+
+    linkModal?.addEventListener("click", (e) => {
+        if (e.target === linkModal) {
+            linkModal.close();
+            window.location.reload();
+        }
+    });
+</script>
+
+<style>
+    dialog::backdrop {
+        background-color: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(4px);
+    }
+
+    dialog[open] {
+        animation: fadeIn 0.2s ease-out;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+</style>
+
+
+--- src\pages\admin\cms\index.astro
+
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import { supabase } from "../../../lib/supabase";
+
+// Fetch existing content
+let portfolioImages: any[] = [];
+let flashDesigns: any[] = [];
+let contactInfo = "";
+let policyText = "";
+
+try {
+    // Fetch portfolio images
+    const { data: portfolio } = await supabase
+        .from("content_images")
+        .select("*")
+        .eq("category", "portfolio")
+        .order("display_order", { ascending: true });
+    portfolioImages = portfolio || [];
+
+    // Fetch flash designs
+    const { data: flash } = await supabase
+        .from("content_images")
+        .select("*")
+        .eq("category", "flash")
+        .order("display_order", { ascending: true });
+    flashDesigns = flash || [];
+
+    // Fetch site settings
+    const { data: contactData } = await supabase
+        .from("site_settings")
+        .select("value")
+        .eq("key", "contact_info")
+        .single();
+    contactInfo = contactData?.value || "";
+
+    const { data: policyData } = await supabase
+        .from("site_settings")
+        .select("value")
+        .eq("key", "policy_text")
+        .single();
+    policyText = policyData?.value || "";
+} catch (error) {
+    console.error("Error fetching content:", error);
+}
+---
+
+<AdminLayout title="Content Management">
+    <!-- Tabs -->
+    <div class="mb-6">
+        <div class="border-b border-gray-200 dark:border-gray-700">
+            <nav class="flex gap-4" aria-label="Tabs">
+                <button
+                    data-tab="portfolio"
+                    class="tab-btn active px-4 py-3 text-sm font-medium border-b-2 border-purple-600 text-purple-600"
+                >
+                    Portfolio Images
+                </button>
+                <button
+                    data-tab="flash"
+                    class="tab-btn px-4 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                >
+                    Flash Designs
+                </button>
+                <button
+                    data-tab="text"
+                    class="tab-btn px-4 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                >
+                    Text Content
+                </button>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Portfolio Tab -->
+    <div id="tab-portfolio" class="tab-content">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6">
+            <h3
+                class="text-lg font-semibold text-gray-900 dark:text-white mb-4"
+            >
+                Upload New Portfolio Image
+            </h3>
+            <form id="portfolio-form" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                        >
+                            Image
+                        </label>
+                        <input
+                            type="file"
+                            id="portfolio-file"
+                            accept="image/*"
+                            required
+                            class="w-full px-4 py-3 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-purple-600 file:text-white file:cursor-pointer"
+                        />
+                    </div>
+                    <div>
+                        <label
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                        >
+                            Title
+                        </label>
+                        <input
+                            type="text"
+                            id="portfolio-title"
+                            required
+                            class="w-full px-4 py-3 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            placeholder="Enter title"
+                        />
+                    </div>
+                </div>
+                <div>
+                    <label
+                        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                    >
+                        Description
+                    </label>
+                    <textarea
+                        id="portfolio-description"
+                        rows="2"
+                        class="w-full px-4 py-3 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        placeholder="Enter description"></textarea>
+                </div>
+                <div class="flex items-center gap-4">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input
+                            type="checkbox"
+                            id="portfolio-featured"
+                            class="w-5 h-5 text-purple-600 rounded focus:ring-purple-500"
+                        />
+                        <span class="text-sm text-gray-700 dark:text-gray-300">
+                            Featured on Homepage
+                        </span>
+                    </label>
+                </div>
+                <button
+                    type="submit"
+                    class="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                >
+                    Upload Image
+                </button>
+            </form>
+        </div>
+
+        <!-- Portfolio Grid -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+            <h3
+                class="text-lg font-semibold text-gray-900 dark:text-white mb-4"
+            >
+                Portfolio Images ({portfolioImages.length})
+            </h3>
+            {
+                portfolioImages.length === 0 ? (
+                    <div class="text-center py-12">
+                        <svg
+                            class="w-16 h-16 mx-auto text-gray-400 mb-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                            />
+                        </svg>
+                        <p class="text-gray-500 dark:text-gray-400">
+                            No portfolio images yet
+                        </p>
+                    </div>
+                ) : (
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        {portfolioImages.map((image) => (
+                            <div class="relative group rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700">
+                                <img
+                                    src={image.url}
+                                    alt={image.title}
+                                    class="w-full aspect-square object-cover"
+                                />
+                                <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 p-4">
+                                    <p class="text-white text-sm font-medium text-center">
+                                        {image.title}
+                                    </p>
+                                    {image.is_featured && (
+                                        <span class="px-2 py-1 bg-yellow-500 text-white text-xs rounded">
+                                            Featured
+                                        </span>
+                                    )}
+                                    <div class="flex gap-2 mt-2">
+                                        <button
+                                            class="toggle-featured-btn p-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors"
+                                            data-id={image.id}
+                                            data-featured={image.is_featured}
+                                            title={
+                                                image.is_featured
+                                                    ? "Remove from featured"
+                                                    : "Add to featured"
+                                            }
+                                        >
+                                            <svg
+                                                class="w-4 h-4"
+                                                fill="currentColor"
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                                            </svg>
+                                        </button>
+                                        <button
+                                            class="delete-image-btn p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                                            data-id={image.id}
+                                            data-category="portfolio"
+                                            title="Delete"
+                                        >
+                                            <svg
+                                                class="w-4 h-4"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <path
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                    stroke-width="2"
+                                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                                />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )
+            }
+        </div>
+    </div>
+
+    <!-- Flash Tab -->
+    <div id="tab-flash" class="tab-content hidden">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6">
+            <h3
+                class="text-lg font-semibold text-gray-900 dark:text-white mb-4"
+            >
+                Add New Flash Design
+            </h3>
+            <form id="flash-form" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                        >
+                            Image
+                        </label>
+                        <input
+                            type="file"
+                            id="flash-file"
+                            accept="image/*"
+                            required
+                            class="w-full px-4 py-3 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-purple-600 file:text-white file:cursor-pointer"
+                        />
+                    </div>
+                    <div>
+                        <label
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                        >
+                            Title
+                        </label>
+                        <input
+                            type="text"
+                            id="flash-title"
+                            required
+                            class="w-full px-4 py-3 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            placeholder="Enter design name"
+                        />
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                        >
+                            Price ($)
+                        </label>
+                        <input
+                            type="number"
+                            id="flash-price"
+                            required
+                            min="0"
+                            class="w-full px-4 py-3 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            placeholder="Enter price"
+                        />
+                    </div>
+                    <div>
+                        <label
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                        >
+                            Size
+                        </label>
+                        <input
+                            type="text"
+                            id="flash-size"
+                            class="w-full px-4 py-3 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            placeholder="e.g., 3-4 inches"
+                        />
+                    </div>
+                </div>
+                <div>
+                    <label
+                        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                    >
+                        Description
+                    </label>
+                    <textarea
+                        id="flash-description"
+                        rows="2"
+                        class="w-full px-4 py-3 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        placeholder="Enter description"></textarea>
+                </div>
+                <button
+                    type="submit"
+                    class="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                >
+                    Add Flash Design
+                </button>
+            </form>
+        </div>
+
+        <!-- Flash Grid -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+            <h3
+                class="text-lg font-semibold text-gray-900 dark:text-white mb-4"
+            >
+                Flash Designs ({flashDesigns.length})
+            </h3>
+            {
+                flashDesigns.length === 0 ? (
+                    <div class="text-center py-12">
+                        <svg
+                            class="w-16 h-16 mx-auto text-gray-400 mb-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M13 10V3L4 14h7v7l9-11h-7z"
+                            />
+                        </svg>
+                        <p class="text-gray-500 dark:text-gray-400">
+                            No flash designs yet
+                        </p>
+                    </div>
+                ) : (
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        {flashDesigns.map((design) => (
+                            <div class="relative group rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700">
+                                <img
+                                    src={design.url}
+                                    alt={design.title}
+                                    class="w-full aspect-square object-cover"
+                                />
+                                <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 p-4">
+                                    <p class="text-white text-sm font-medium text-center">
+                                        {design.title}
+                                    </p>
+                                    <p class="text-green-400 font-bold">
+                                        ${design.price}
+                                    </p>
+                                    <p class="text-gray-300 text-xs">
+                                        {design.size}
+                                    </p>
+                                    <button
+                                        class="delete-image-btn mt-2 p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                                        data-id={design.id}
+                                        data-category="flash"
+                                        title="Delete"
+                                    >
+                                        <svg
+                                            class="w-4 h-4"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                stroke-width="2"
+                                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                            />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )
+            }
+        </div>
+    </div>
+
+    <!-- Text Content Tab -->
+    <div id="tab-text" class="tab-content hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Contact Info -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+                <h3
+                    class="text-lg font-semibold text-gray-900 dark:text-white mb-4"
+                >
+                    Contact Information
+                </h3>
+                <form id="contact-form" class="space-y-4">
+                    <div>
+                        <label
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                        >
+                            Contact Page Content
+                        </label>
+                        <textarea
+                            id="contact-text"
+                            rows="10"
+                            class="w-full px-4 py-3 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 font-mono text-sm"
+                            placeholder="Enter contact information (supports Markdown)"
+                            >{contactInfo}</textarea
+                        >
+                    </div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">
+                        Supports basic Markdown formatting
+                    </p>
+                    <button
+                        type="submit"
+                        class="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                    >
+                        Save Contact Info
+                    </button>
+                </form>
+            </div>
+
+            <!-- Policy Text -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+                <h3
+                    class="text-lg font-semibold text-gray-900 dark:text-white mb-4"
+                >
+                    Policy & Terms
+                </h3>
+                <form id="policy-form" class="space-y-4">
+                    <div>
+                        <label
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                        >
+                            Policy Page Content
+                        </label>
+                        <textarea
+                            id="policy-text"
+                            rows="10"
+                            class="w-full px-4 py-3 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 font-mono text-sm"
+                            placeholder="Enter policy text (supports Markdown)"
+                            >{policyText}</textarea
+                        >
+                    </div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">
+                        Supports basic Markdown formatting
+                    </p>
+                    <button
+                        type="submit"
+                        class="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                    >
+                        Save Policy Text
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div
+        id="loading-overlay"
+        class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden"
+    >
+        <div
+            class="bg-white dark:bg-gray-800 rounded-xl p-6 flex items-center gap-4"
+        >
+            <svg
+                class="animate-spin h-6 w-6 text-purple-600"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+            >
+                <circle
+                    class="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    stroke-width="4"></circle>
+                <path
+                    class="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
+            </svg>
+            <span class="text-gray-900 dark:text-white">Processing...</span>
+        </div>
+    </div>
+</AdminLayout>
+
+<script>
+    import { supabase } from "../../../lib/supabase";
+
+    const loadingOverlay = document.getElementById("loading-overlay");
+
+    function showLoading() {
+        loadingOverlay?.classList.remove("hidden");
+    }
+
+    function hideLoading() {
+        loadingOverlay?.classList.add("hidden");
+    }
+
+    // Tab switching
+    const tabBtns = document.querySelectorAll(".tab-btn");
+    const tabContents = document.querySelectorAll(".tab-content");
+
+    tabBtns.forEach((btn) => {
+        btn.addEventListener("click", () => {
+            const tabId = btn.getAttribute("data-tab");
+
+            // Update button styles
+            tabBtns.forEach((b) => {
+                b.classList.remove("border-purple-600", "text-purple-600");
+                b.classList.add(
+                    "border-transparent",
+                    "text-gray-500",
+                    "dark:text-gray-400",
+                );
+            });
+            btn.classList.add("border-purple-600", "text-purple-600");
+            btn.classList.remove(
+                "border-transparent",
+                "text-gray-500",
+                "dark:text-gray-400",
+            );
+
+            // Show/hide content
+            tabContents.forEach((content) => {
+                content.classList.add("hidden");
+            });
+            document.getElementById(`tab-${tabId}`)?.classList.remove("hidden");
+        });
+    });
+
+    // Portfolio form
+    const portfolioForm = document.getElementById(
+        "portfolio-form",
+    ) as HTMLFormElement;
+    portfolioForm?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        showLoading();
+
+        const fileInput = document.getElementById(
+            "portfolio-file",
+        ) as HTMLInputElement;
+        const title = (
+            document.getElementById("portfolio-title") as HTMLInputElement
+        ).value;
+        const description = (
+            document.getElementById(
+                "portfolio-description",
+            ) as HTMLTextAreaElement
+        ).value;
+        const isFeatured = (
+            document.getElementById("portfolio-featured") as HTMLInputElement
+        ).checked;
+
+        const file = fileInput.files?.[0];
+        if (!file) {
+            hideLoading();
+            alert("Please select an image");
+            return;
+        }
+
+        try {
+            // Upload to storage
+            const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, "")}`;
+            const { data: uploadData, error: uploadError } =
+                await supabase.storage
+                    .from("portfolio-images")
+                    .upload(fileName, file);
+
+            if (uploadError) throw uploadError;
+
+            // Get public URL
+            const {
+                data: { publicUrl },
+            } = supabase.storage
+                .from("portfolio-images")
+                .getPublicUrl(fileName);
+
+            // Insert into database
+            const { error: insertError } = await supabase
+                .from("content_images")
+                .insert({
+                    url: publicUrl,
+                    category: "portfolio",
+                    title,
+                    description,
+                    is_featured: isFeatured,
+                });
+
+            if (insertError) throw insertError;
+
+            hideLoading();
+            window.location.reload();
+        } catch (err) {
+            hideLoading();
+            console.error("Error uploading:", err);
+            alert("Failed to upload image. Please try again.");
+        }
+    });
+
+    // Flash form
+    const flashForm = document.getElementById("flash-form") as HTMLFormElement;
+    flashForm?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        showLoading();
+
+        const fileInput = document.getElementById(
+            "flash-file",
+        ) as HTMLInputElement;
+        const title = (
+            document.getElementById("flash-title") as HTMLInputElement
+        ).value;
+        const price = parseFloat(
+            (document.getElementById("flash-price") as HTMLInputElement).value,
+        );
+        const size = (document.getElementById("flash-size") as HTMLInputElement)
+            .value;
+        const description = (
+            document.getElementById("flash-description") as HTMLTextAreaElement
+        ).value;
+
+        const file = fileInput.files?.[0];
+        if (!file) {
+            hideLoading();
+            alert("Please select an image");
+            return;
+        }
+
+        try {
+            // Upload to storage
+            const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, "")}`;
+            const { data: uploadData, error: uploadError } =
+                await supabase.storage
+                    .from("flash-images")
+                    .upload(fileName, file);
+
+            if (uploadError) throw uploadError;
+
+            // Get public URL
+            const {
+                data: { publicUrl },
+            } = supabase.storage.from("flash-images").getPublicUrl(fileName);
+
+            // Insert into database
+            const { error: insertError } = await supabase
+                .from("content_images")
+                .insert({
+                    url: publicUrl,
+                    category: "flash",
+                    title,
+                    description,
+                    price,
+                    size,
+                    is_featured: false,
+                });
+
+            if (insertError) throw insertError;
+
+            hideLoading();
+            window.location.reload();
+        } catch (err) {
+            hideLoading();
+            console.error("Error uploading:", err);
+            alert("Failed to upload design. Please try again.");
+        }
+    });
+
+    // Contact form
+    const contactForm = document.getElementById(
+        "contact-form",
+    ) as HTMLFormElement;
+    contactForm?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        showLoading();
+
+        const contactText = (
+            document.getElementById("contact-text") as HTMLTextAreaElement
+        ).value;
+
+        try {
+            const { error } = await supabase
+                .from("site_settings")
+                .upsert(
+                    {
+                        key: "contact_info",
+                        value: contactText,
+                        created_at: new Date().toISOString(),
+                    },
+                    { onConflict: "key" },
+                );
+
+            if (error) throw error;
+
+            hideLoading();
+            alert("Contact information saved successfully!");
+        } catch (err) {
+            hideLoading();
+            console.error("Error saving:", err);
+            alert("Failed to save. Please try again.");
+        }
+    });
+
+    // Policy form
+    const policyForm = document.getElementById(
+        "policy-form",
+    ) as HTMLFormElement;
+    policyForm?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        showLoading();
+
+        const policyText = (
+            document.getElementById("policy-text") as HTMLTextAreaElement
+        ).value;
+
+        try {
+            const { error } = await supabase
+                .from("site_settings")
+                .upsert(
+                    {
+                        key: "policy_text",
+                        value: policyText,
+                        created_at: new Date().toISOString(),
+                    },
+                    { onConflict: "key" },
+                );
+
+            if (error) throw error;
+
+            hideLoading();
+            alert("Policy text saved successfully!");
+        } catch (err) {
+            hideLoading();
+            console.error("Error saving:", err);
+            alert("Failed to save. Please try again.");
+        }
+    });
+
+    // Toggle featured
+    document.querySelectorAll(".toggle-featured-btn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+            const id = btn.getAttribute("data-id");
+            const currentlyFeatured =
+                btn.getAttribute("data-featured") === "true";
+
+            showLoading();
+
+            try {
+                const { error } = await supabase
+                    .from("content_images")
+                    .update({ is_featured: !currentlyFeatured })
+                    .eq("id", id);
+
+                if (error) throw error;
+
+                hideLoading();
+                window.location.reload();
+            } catch (err) {
+                hideLoading();
+                console.error("Error updating:", err);
+                alert("Failed to update. Please try again.");
+            }
+        });
+    });
+
+    // Delete image
+    document.querySelectorAll(".delete-image-btn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+            if (!confirm("Are you sure you want to delete this image?")) return;
+
+            const id = btn.getAttribute("data-id");
+            showLoading();
+
+            try {
+                const { error } = await supabase
+                    .from("content_images")
+                    .delete()
+                    .eq("id", id);
+
+                if (error) throw error;
+
+                hideLoading();
+                window.location.reload();
+            } catch (err) {
+                hideLoading();
+                console.error("Error deleting:", err);
+                alert("Failed to delete. Please try again.");
+            }
+        });
+    });
+</script>
+
+<style>
+    .tab-content {
+        animation: fadeIn 0.2s ease-out;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
+    }
+</style>
+
+
+--- src\styles\global.css
+
+@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Great+Vibes:&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Pacifico&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Doto:wght@100..900&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    :root {
+        --background: 0 0% 70%;
+        --foreground: 240 10% 3.9%;
+        --card: 0 0% 100%;
+        --card-foreground: 240 10% 3.9%;
+        --popover: 0 0% 100%;
+        --popover-foreground: 240 10% 3.9%;
+        --primary: 271 81% 51%;
+        --primary-foreground: 0 0% 98%;
+        --secondary: 240 4.8% 95.9%;
+        --secondary-foreground: 240 5.9% 10%;
+        --muted: 240 4.8% 95.9%;
+        --muted-foreground: 240 3.8% 46.1%;
+        --accent: 240 4.8% 95.9%;
+        --accent-foreground: 240 5.9% 10%;
+        --destructive: 0 84.2% 60.2%;
+        --destructive-foreground: 0 0% 98%;
+        --border: 240 5.9% 90%;
+        --input: 240 5.9% 90%;
+        --ring: 271 81% 51%;
+        --radius: 0.75rem;
+        --pink-cream: 0 100% 96%;
+        /* #FFF0F5 */
+    }
+
+    .dark {
+        --background: 240 10% 3.9%;
+        --foreground: 0 0% 98%;
+        --card: 240 10% 3.9%;
+        --card-foreground: 0 0% 98%;
+        --popover: 240 10% 3.9%;
+        --popover-foreground: 0 0% 98%;
+        --primary: 271 81% 51%;
+        --primary-foreground: 0 0% 98%;
+        --secondary: 240 3.7% 15.9%;
+        --secondary-foreground: 0 0% 98%;
+        --muted: 240 3.7% 15.9%;
+        --muted-foreground: 240 5% 64.9%;
+        --accent: 240 3.7% 15.9%;
+        --accent-foreground: 0 0% 98%;
+        --destructive: 0 62.8% 30.6%;
+        --destructive-foreground: 0 0% 98%;
+        --border: 240 3.7% 15.9%;
+        --input: 240 3.7% 15.9%;
+        --ring: 271 81% 51%;
+    }
+}
+
+@layer base {
+    * {
+        @apply border-border;
+    }
+
+    body {
+        @apply bg-background text-foreground font-playfair;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        @apply font-doto;
+    }
+}
+
+.hero-gradient {
+    background: linear-gradient(135deg, #6b46c1 0%, #0a0a0a 100%);
+}
+
+.portfolio-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 2rem;
+}
+
+.animate-slide-up {
+    animation: slideUp 0.5s ease-out forwards;
+}
+
+.booking-form-container {
+    margin-top: 60px;
+    /* Adjust this value based on your navbar height */
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes shooting-star {
+    from {
+        transform: translate(0, 0);
+    }
+
+    to {
+        transform: translate(var(--end-x), var(--end-y));
+        opacity: 0;
+    }
+}
+
+/* Circular Gallery Styles */
+.circular-gallery {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    cursor: grab;
+    position: relative;
+    touch-action: none;
+    background: transparent;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.circular-gallery:active {
+    cursor: grabbing;
+}
+
+.circular-gallery canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    touch-action: none;
+}
+
+.gallery-wrapper {
+    position: relative;
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: linear-gradient(
+        135deg,
+        hsl(var(--background) / 0.5) 0%,
+        hsl(var(--muted) / 0.3) 100%
+    );
+}
+
+.gallery-instructions {
+    position: absolute;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    color: hsl(var(--foreground));
+    opacity: 0.6;
+    font-size: 0.875rem;
+    font-family: "Doto", sans-serif;
+    pointer-events: none;
+    z-index: 10;
+    text-align: center;
+    transition: opacity 0.3s ease;
+    background: hsl(var(--background) / 0.5);
+    padding: 0.5rem 1.5rem;
+    border-radius: 9999px;
+    backdrop-filter: blur(8px);
+}
+
+.gallery-wrapper:hover .gallery-instructions,
+.circular-gallery:hover + .gallery-instructions {
+    opacity: 0.9;
+}
+
+/* Portfolio Modal Styles */
+#portfolio-modal {
+    border: none;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+#portfolio-modal::backdrop {
+    background-color: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(4px);
+}
+
+#portfolio-modal[open] {
+    animation: modalFadeIn 0.3s ease-out;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Modal content responsive styles */
+#portfolio-modal .grid {
+    display: grid;
+}
+
+@media (max-width: 768px) {
+    #portfolio-modal .grid {
+        grid-template-columns: 1fr;
+    }
+
+    #portfolio-modal img {
+        max-height: 50vh !important;
+    }
+}
+
+@media (min-width: 769px) {
+    #portfolio-modal .grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+/* ================================
+   Booking Modal Styles
+   ================================ */
+
+/* Booking Modal Backdrop */
+#booking-modal::backdrop {
+    background-color: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(4px);
+    animation: backdropFadeIn 0.3s ease-out;
+}
+
+@keyframes backdropFadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* Step Transition Animations */
+.form-step-enter {
+    animation: stepSlideIn 0.3s ease-out forwards;
+}
+
+.form-step-exit {
+    animation: stepSlideOut 0.3s ease-out forwards;
+}
+
+@keyframes stepSlideIn {
+    from {
+        opacity: 0;
+        transform: translateX(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes stepSlideOut {
+    from {
+        opacity: 1;
+        transform: translateX(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateX(-30px);
+    }
+}
+
+/* Reverse animation for going back */
+.form-step-enter-reverse {
+    animation: stepSlideInReverse 0.3s ease-out forwards;
+}
+
+.form-step-exit-reverse {
+    animation: stepSlideOutReverse 0.3s ease-out forwards;
+}
+
+@keyframes stepSlideInReverse {
+    from {
+        opacity: 0;
+        transform: translateX(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes stepSlideOutReverse {
+    from {
+        opacity: 1;
+        transform: translateX(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateX(30px);
+    }
+}
+
+/* Fade transition alternative */
+.form-step-fade-enter {
+    animation: stepFadeIn 0.3s ease-out forwards;
+}
+
+.form-step-fade-exit {
+    animation: stepFadeOut 0.2s ease-out forwards;
+}
+
+@keyframes stepFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes stepFadeOut {
+    from {
+        opacity: 1;
+        transform: scale(1);
+    }
+    to {
+        opacity: 0;
+        transform: scale(0.98);
+    }
+}
+
+/* Booking trigger button styles */
+.booking-trigger {
+    font-family: inherit;
+    font-size: inherit;
+}
+
+/* Ensure modal displays above everything */
+#booking-modal {
+    z-index: 100;
+}
+
+/* Smooth height transitions for modal content */
+.booking-modal-content {
+    transition: height 0.3s ease-out;
+}
+
+/* Input focus states for booking form */
+#booking-form input:focus,
+#booking-form textarea:focus,
+#booking-form select:focus {
+    outline: none;
+    border-color: hsl(var(--primary));
+    box-shadow: 0 0 0 3px hsl(var(--primary) / 0.1);
+}
+
+/* Validation error state */
+#booking-form .border-red-500 {
+    border-color: hsl(0 84.2% 60.2%) !important;
+    animation: shake 0.4s ease-out;
+}
+
+@keyframes shake {
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+    20%,
+    60% {
+        transform: translateX(-4px);
+    }
+    40%,
+    80% {
+        transform: translateX(4px);
+    }
+}
+
+--- src/pages/admin/bookings/[id].astro
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import { supabase } from "../../../lib/supabase";
+
+// Get booking ID from URL
+const { id } = Astro.params;
+
+if (!id) {
+    return Astro.redirect("/admin/bookings");
+}
+
+// Fetch booking details
+let booking: any = null;
+let messages: any[] = [];
+let error = null;
+
+try {
+    const { data: bookingData, error: bookingError } = await supabase
+        .from("bookings")
+        .select("*")
+        .eq("id", id)
+        .single();
+
+    if (bookingError) throw bookingError;
+    booking = bookingData;
+
+    // Fetch messages for this booking
+    const { data: messagesData, error: messagesError } = await supabase
+        .from("messages")
+        .select("*")
+        .eq("booking_id", id)
+        .order("created_at", { ascending: true });
+
+    if (!messagesError) {
+        messages = messagesData || [];
+    }
+} catch (e) {
+    console.error("Error fetching booking:", e);
+    error = e;
+}
+
+// If booking not found, redirect
+if (!booking && !error) {
+    return Astro.redirect("/admin/bookings");
+}
+
+// Format date helper
+function formatDate(dateString: string) {
+    return new Date(dateString).toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+    });
+}
+
+function formatMessageTime(dateString: string) {
+    return new Date(dateString).toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+    });
+}
+
+function getStatusColor(status: string) {
+    switch (status) {
+        case "pending":
+            return "bg-yellow-100 text-yellow-800 border-yellow-300";
+        case "accepted":
+            return "bg-green-100 text-green-800 border-green-300";
+        case "denied":
+            return "bg-red-100 text-red-800 border-red-300";
+        default:
+            return "bg-gray-100 text-gray-800 border-gray-300";
+    }
+}
+
+const clientLink = booking?.client_access_token
+    ? `/my-booking/${booking.client_access_token}`
+    : null;
+---
+
+<AdminLayout title={`Booking - ${booking?.first_name} ${booking?.last_name}`}>
+    {
+        error ? (
+            <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-6 text-center">
+                <p class="text-red-600 dark:text-red-400">
+                    Error loading booking. Please try again.
+                </p>
+                <a
+                    href="/admin/bookings"
+                    class="text-purple-600 hover:underline mt-2 inline-block"
+                >
+                    ← Back to Bookings
+                </a>
+            </div>
+        ) : (
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Booking Details -->
+                <div class="lg:col-span-2 space-y-6">
+                    <!-- Header Card -->
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+                        <div class="flex items-start justify-between mb-6">
+                            <div class="flex items-center gap-4">
+                                <div class="w-16 h-16 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center">
+                                    <span class="text-purple-600 dark:text-purple-400 font-bold text-xl">
+                                        {booking.first_name?.[0]?.toUpperCase()}
+                                        {booking.last_name?.[0]?.toUpperCase()}
+                                    </span>
+                                </div>
+                                <div>
+                                    <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
+                                        {booking.first_name} {booking.last_name}
+                                    </h2>
+                                    <p class="text-gray-500 dark:text-gray-400">
+                                        {booking.email}
+                                    </p>
+                                    <p class="text-gray-500 dark:text-gray-400">
+                                        {booking.phone}
+                                    </p>
+                                </div>
+                            </div>
+                            <span
+                                class={`px-4 py-2 rounded-full text-sm font-medium capitalize border ${getStatusColor(booking.status)}`}
+                            >
+                                {booking.status}
+                            </span>
+                        </div>
+
+                        <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+                            <dl class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                        Submitted
+                                    </dt>
+                                    <dd class="mt-1 text-gray-900 dark:text-white">
+                                        {formatDate(booking.created_at)}
+                                    </dd>
+                                </div>
+                                <div>
+                                    <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                        Booking Type
+                                    </dt>
+                                    <dd class="mt-1 text-gray-900 dark:text-white">
+                                        {booking.is_custom
+                                            ? "Custom Design"
+                                            : "Flash Design"}
+                                    </dd>
+                                </div>
+                                <div>
+                                    <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                        Size
+                                    </dt>
+                                    <dd class="mt-1 text-gray-900 dark:text-white">
+                                        {booking.tattoo_size}
+                                    </dd>
+                                </div>
+                                <div>
+                                    <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                        Placement
+                                    </dt>
+                                    <dd class="mt-1 text-gray-900 dark:text-white">
+                                        {booking.tattoo_placement}
+                                    </dd>
+                                </div>
+                                {booking.agreed_price && (
+                                    <div>
+                                        <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                            Agreed Price
+                                        </dt>
+                                        <dd class="mt-1 text-gray-900 dark:text-white font-semibold">
+                                            ${booking.agreed_price}
+                                        </dd>
+                                    </div>
+                                )}
+                                {booking.scheduled_date && (
+                                    <div>
+                                        <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                            Scheduled Date
+                                        </dt>
+                                        <dd class="mt-1 text-gray-900 dark:text-white">
+                                            {formatDate(booking.scheduled_date)}
+                                        </dd>
+                                    </div>
+                                )}
+                            </dl>
+                        </div>
+                    </div>
+
+                    <!-- Tattoo Idea -->
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                            Tattoo Idea
+                        </h3>
+                        <p class="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                            {booking.tattoo_idea}
+                        </p>
+                    </div>
+
+                    <!-- Reference Photos -->
+                    {booking.reference_photos &&
+                        booking.reference_photos.length > 0 && (
+                            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+                                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                                    Reference Photos
+                                </h3>
+                                <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                    {booking.reference_photos.map(
+                                        (photo: string, index: number) => (
+                                            <a
+                                                href={photo}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                class="block aspect-square rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 hover:opacity-80 transition-opacity"
+                                            >
+                                                <img
+                                                    src={photo}
+                                                    alt={`Reference ${index + 1}`}
+                                                    class="w-full h-full object-cover"
+                                                />
+                                            </a>
+                                        ),
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                    <!-- Admin Notes -->
+                    {booking.admin_notes && (
+                        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                                Admin Notes
+                            </h3>
+                            <p class="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                                {booking.admin_notes}
+                            </p>
+                        </div>
+                    )}
+                </div>
+
+                <!-- Sidebar -->
+                <div class="space-y-6">
+                    <!-- Actions -->
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                            Actions
+                        </h3>
+                        <div class="space-y-3">
+                            {booking.status === "pending" && (
+                                <>
+                                    <button
+                                        id="accept-btn"
+                                        class="w-full py-2 px-4 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+                                    >
+                                        <svg
+                                            class="w-5 h-5"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                stroke-width="2"
+                                                d="M5 13l4 4L19 7"
+                                            />
+                                        </svg>
+                                        Accept Booking
+                                    </button>
+                                    <button
+                                        id="deny-btn"
+                                        class="w-full py-2 px-4 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
+                                    >
+                                        <svg
+                                            class="w-5 h-5"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                stroke-width="2"
+                                                d="M6 18L18 6M6 6l12 12"
+                                            />
+                                        </svg>
+                                        Deny Booking
+                                    </button>
+                                </>
+                            )}
+                            <button
+                                id="edit-btn"
+                                class="w-full py-2 px-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center gap-2"
+                            >
+                                <svg
+                                    class="w-5 h-5"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                    />
+                                </svg>
+                                Edit Details
+                            </button>
+                            <a
+                                href="/admin/bookings"
+                                class="w-full py-2 px-4 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center justify-center gap-2"
+                            >
+                                ← Back to List
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Client Link -->
+                    {clientLink && (
+                        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                                Client Access Link
+                            </h3>
+                            <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">
+                                Share this link with the client:
+                            </p>
+                            <div class="flex gap-2">
+                                <input
+                                    id="client-link-input"
+                                    type="text"
+                                    readonly
+                                    value={`${Astro.url.origin}${clientLink}`}
+                                    class="flex-1 px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white"
+                                />
+                                <button
+                                    id="copy-link-btn"
+                                    class="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                                    title="Copy link"
+                                >
+                                    <svg
+                                        class="w-5 h-5"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            stroke-width="2"
+                                            d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                                        />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    <!-- Chat -->
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
+                        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                                Chat with Client
+                            </h3>
+                        </div>
+
+                        <!-- Messages -->
+                        <div
+                            id="messages-container"
+                            class="h-80 overflow-y-auto p-4 space-y-4"
+                        >
+                            {messages.length === 0 ? (
+                                <div class="text-center py-8">
+                                    <svg
+                                        class="w-12 h-12 mx-auto text-gray-400 mb-3"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            stroke-width="2"
+                                            d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                                        />
+                                    </svg>
+                                    <p class="text-gray-500 dark:text-gray-400 text-sm">
+                                        No messages yet
+                                    </p>
+                                    <p class="text-gray-400 dark:text-gray-500 text-xs mt-1">
+                                        Start a conversation with the client
+                                    </p>
+                                </div>
+                            ) : (
+                                messages.map((msg) => (
+                                    <div
+                                        class={`flex ${msg.sender_role === "admin" ? "justify-end" : "justify-start"}`}
+                                    >
+                                        <div
+                                            class={`max-w-[80%] rounded-lg px-4 py-2 ${
+                                                msg.sender_role === "admin"
+                                                    ? "bg-purple-600 text-white"
+                                                    : "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white"
+                                            }`}
+                                        >
+                                            <p class="text-sm">{msg.content}</p>
+                                            <p
+                                                class={`text-xs mt-1 ${
+                                                    msg.sender_role === "admin"
+                                                        ? "text-purple-200"
+                                                        : "text-gray-500 dark:text-gray-400"
+                                                }`}
+                                            >
+                                                {formatMessageTime(
+                                                    msg.created_at,
+                                                )}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+
+                        <!-- Message Input -->
+                        <div class="p-4 border-t border-gray-200 dark:border-gray-700">
+                            <form id="message-form" class="flex gap-2">
+                                <input
+                                    type="text"
+                                    id="message-input"
+                                    placeholder="Type a message..."
+                                    class="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                />
+                                <button
+                                    type="submit"
+                                    class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                                >
+                                    <svg
+                                        class="w-5 h-5"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            stroke-width="2"
+                                            d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                                        />
+                                    </svg>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        )
+    }
+
+    <!-- Edit Modal -->
+    <dialog id="edit-modal" class="fixed inset-0 z-50 bg-transparent p-4">
+        <div
+            class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full mx-auto mt-20 p-6"
+        >
+            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6">
+                Edit Booking Details
+            </h3>
+
+            <form id="edit-form" class="space-y-4">
+                <div>
+                    <label
+                        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                    >
+                        Agreed Price ($)
+                    </label>
+                    <input
+                        type="number"
+                        id="edit-price"
+                        value={booking?.agreed_price || ""}
+                        class="w-full px-4 py-3 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        placeholder="Enter price"
+                    />
+                </div>
+
+                <div>
+                    <label
+                        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                    >
+                        Scheduled Date
+                    </label>
+                    <input
+                        type="datetime-local"
+                        id="edit-date"
+                        value={booking?.scheduled_date?.slice(0, 16) || ""}
+                        class="w-full px-4 py-3 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                </div>
+
+                <div>
+                    <label
+                        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                    >
+                        Admin Notes
+                    </label>
+                    <textarea
+                        id="edit-notes"
+                        rows="3"
+                        class="w-full px-4 py-3 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        placeholder="Add notes..."
+                    >{booking?.admin_notes || ""}</textarea>
+                </div>
+
+                <div class="flex justify-end gap-3 pt-4">
+                    <button
+                        type="button"
+                        id="edit-cancel"
+                        class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="submit"
+                        class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                    >
+                        Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </dialog>
+
+    <!-- Status Update Modal -->
+    <dialog id="status-modal" class="fixed inset-0 z-50 bg-transparent p-4">
+        <div
+            class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full mx-auto mt-20 p-6"
+        >
+            <h3
+                id="status-modal-title"
+                class="text-xl font-bold text-gray-900 dark:text-white mb-4"
+            >
+            </h3>
+            <p
+                id="status-modal-desc"
+                class="text-gray-600 dark:text-gray-400 mb-6"
+            >
+            </p>
+
+            <div class="flex justify-end gap-3">
+                <button
+                    id="status-cancel"
+                    class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                >
+                    Cancel
+                </button>
+                <button
+                    id="status-confirm"
+                    class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                >
+                    Confirm
+                </button>
+            </div>
+        </div>
+    </dialog>
+</AdminLayout>
+
+<script define:vars={{ bookingId: id }}>
+    window.bookingId = bookingId;
+</script>
+
+<script>
+    import { supabase } from "../../../lib/supabase";
+
+    const bookingId = (window as any).bookingId;
+
+    // Copy link functionality
+    const copyLinkBtn = document.getElementById("copy-link-btn");
+    const clientLinkInput = document.getElementById(
+        "client-link-input",
+    ) as HTMLInputElement;
+
+    copyLinkBtn?.addEventListener("click", async () => {
+        if (clientLinkInput) {
+            try {
+                await navigator.clipboard.writeText(clientLinkInput.value);
+                copyLinkBtn.innerHTML = `
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                `;
+                setTimeout(() => {
+                    copyLinkBtn.innerHTML = `
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                        </svg>
+                    `;
+                }, 2000);
+            } catch (err) {
+                console.error("Failed to copy:", err);
+            }
+        }
+    });
+
+    // Edit modal
+    const editBtn = document.getElementById("edit-btn");
+    const editModal = document.getElementById("edit-modal") as HTMLDialogElement;
+    const editCancel = document.getElementById("edit-cancel");
+    const editForm = document.getElementById("edit-form") as HTMLFormElement;
+
+    editBtn?.addEventListener("click", () => {
+        editModal?.showModal();
+    });
+
+    editCancel?.addEventListener("click", () => {
+        editModal?.close();
+    });
+
+    editModal?.addEventListener("click", (e) => {
+        if (e.target === editModal) {
+            editModal.close();
+        }
+    });
+
+    editForm?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const price = (document.getElementById("edit-price") as HTMLInputElement)
+            ?.value;
+        const date = (document.getElementById("edit-date") as HTMLInputElement)
+            ?.value;
+        const notes = (
+            document.getElementById("edit-notes") as HTMLTextAreaElement
+        )?.value;
+
+        const updates: any = {};
+        if (price) updates.agreed_price = parseFloat(price);
+        if (date) updates.scheduled_date = new Date(date).toISOString();
+        if (notes !== undefined) updates.admin_notes = notes;
+
+        try {
+            const { error } = await supabase
+                .from("bookings")
+                .update(updates)
+                .eq("id", bookingId);
+
+            if (error) throw error;
+
+            editModal?.close();
+            window.location.reload();
+        } catch (err) {
+            console.error("Error updating booking:", err);
+            alert("Failed to update booking. Please try again.");
+        }
+    });
+
+    // Status update modal
+    const acceptBtn = document.getElementById("accept-btn");
+    const denyBtn = document.getElementById("deny-btn");
+    const statusModal = document.getElementById(
+        "status-modal",
+    ) as HTMLDialogElement;
+    const statusModalTitle = document.getElementById("status-modal-title");
+    const statusModalDesc = document.getElementById("status-modal-desc");
+    const statusCancel = document.getElementById("status-cancel");
+    const statusConfirm = document.getElementById("status-confirm");
+
+    let currentStatusAction: "accept" | "deny" | null = null;
+
+    acceptBtn?.addEventListener("click", () => {
+        currentStatusAction = "accept";
+        if (statusModalTitle)
+            statusModalTitle.textContent = "Accept Booking";
+        if (statusModalDesc)
+            statusModalDesc.textContent =
+                "This will accept the booking and generate a client access link.";
+        if (statusConfirm) {
+            statusConfirm.className =
+                "px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors";
+            statusConfirm.textContent = "Accept";
+        }
+        statusModal?.showModal();
+    });
+
+    denyBtn?.addEventListener("click", () => {
+        currentStatusAction = "deny";
+        if (statusModalTitle) statusModalTitle.textContent = "Deny Booking";
+        if (statusModalDesc)
+            statusModalDesc.textContent =
+                "This will deny the booking request.";
+        if (statusConfirm) {
+            statusConfirm.className =
+                "px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors";
+            statusConfirm.textContent = "Deny";
+        }
+        statusModal?.showModal();
+    });
+
+    statusCancel?.addEventListener("click", () => {
+        statusModal?.close();
+        currentStatusAction = null;
+    });
+
+    statusModal?.addEventListener("click", (e) => {
+        if (e.target === statusModal) {
+            statusModal.close();
+            currentStatusAction = null;
+        }
+    });
+
+    statusConfirm?.addEventListener("click", async () => {
+        if (!currentStatusAction) return;
+
+        const newStatus = currentStatusAction === "accept" ? "accepted" : "denied";
+        const updates: any = { status: newStatus };
+
+        if (currentStatusAction === "accept") {
+            updates.client_access_token = crypto.randomUUID();
+        }
+
+        try {
+            const { error } = await supabase
+                .from("bookings")
+                .update(updates)
+                .eq("id", bookingId);
+
+            if (error) throw error;
+
+            statusModal?.close();
+            window.location.reload();
+        } catch (err) {
+            console.error("Error updating booking:", err);
+            alert("Failed to update booking. Please try again.");
+        }
+    });
+
+    // Chat functionality
+    const messageForm = document.getElementById("message-form") as HTMLFormElement;
+    const messageInput = document.getElementById("message-input") as HTMLInputElement;
+    const messagesContainer = document.getElementById("messages-container");
+
+    function formatMessageTime(date: Date) {
+        return date.toLocaleTimeString("en-US", {
+            hour: "numeric",
+            minute: "2-digit",
+        });
+    }
+
+    function addMessageToUI(message: { content: string; sender_role: string; created_at: string }) {
+        if (!messagesContainer) return;
+
+        // Remove "no messages" placeholder if exists
+        const placeholder = messagesContainer.querySelector(".text-center.py-8");
+        if (placeholder) {
+            placeholder.remove();
+        }
+
+        const messageDiv = document.createElement("div");
+        messageDiv.className = `flex ${message.sender_role === "admin" ? "justify-end" : "justify-start"}`;
+
+        const bubbleClass = message.sender_role === "admin"
+            ? "bg-purple-600 text-white"
+            : "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white";
+
+        const timeClass = message.sender_role === "admin"
+            ? "text-purple-200"
+            : "text-gray-500 dark:text-gray-400";
+
+        messageDiv.innerHTML = `
+            <div class="max-w-[80%] rounded-lg px-4 py-2 ${bubbleClass}">
+                <p class="text-sm">${message.content}</p>
+                <p class="text-xs mt-1 ${timeClass}">${formatMessageTime(new Date(message.created_at))}</p>
+            </div>
+        `;
+
+        messagesContainer.appendChild(messageDiv);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    messageForm?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const content = messageInput?.value.trim();
+        if (!content) return;
+
+        try {
+            const { data, error } = await supabase
+                .from("messages")
+                .insert({
+                    booking_id: bookingId,
+                    sender_role: "admin",
+                    content,
+                })
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            messageInput.value = "";
+            addMessageToUI(data);
+        } catch (err) {
+            console.error("Error sending message:", err);
+            alert("Failed to send message. Please try again.");
+        }
+    });
+
+    // Subscribe to realtime messages
+    const channel = supabase
+        .channel(`messages:${bookingId}`)
+        .on(
+            "postgres_changes",
+            {
+                event: "INSERT",
+                schema: "public",
+                table: "messages",
+                filter: `booking_id=eq.${bookingId}`,
+            },
+            (payload) => {
+                const message = payload.new as any;
+                // Only add if it's from the client (admin messages are added immediately)
+                if (message.sender_role === "client") {
+                    addMessageToUI(message);
+                }
+            }
+        )
+        .subscribe();
+
+    // Scroll to bottom of messages on load
+    if (messagesContainer) {
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+</script>
+
+<style>
+    dialog::backdrop {
+        background-color: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(4px);
+    }
+
+    dialog[open] {
+        animation: fadeIn 0.2s ease-out;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+</style>
+
+---- src/pages/my-booking/[token].astro
+
+---
+import Layout from "../../layouts/Layout.astro";
+import { supabase } from "../../lib/supabase";
+
+// Get token from URL
+const { token } = Astro.params;
+
+if (!token) {
+    return Astro.redirect("/");
+}
+
+// Fetch booking by token
+let booking: any = null;
+let messages: any[] = [];
+let error = null;
+
+try {
+    const { data: bookingData, error: bookingError } = await supabase
+        .from("bookings")
+        .select("*")
+        .eq("client_access_token", token)
+        .single();
+
+    if (bookingError || !bookingData) {
+        return new Response(null, {
+            status: 404,
+            statusText: "Not Found",
+        });
+    }
+
+    booking = bookingData;
+
+    // Fetch messages for this booking
+    const { data: messagesData } = await supabase
+        .from("messages")
+        .select("*")
+        .eq("booking_id", booking.id)
+        .order("created_at", { ascending: true });
+
+    messages = messagesData || [];
+} catch (e) {
+    console.error("Error fetching booking:", e);
+    error = e;
+}
+
+// Format date helper
+function formatDate(dateString: string) {
+    return new Date(dateString).toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+    });
+}
+
+function formatMessageTime(dateString: string) {
+    return new Date(dateString).toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+    });
+}
+
+function getStatusInfo(status: string) {
+    switch (status) {
+        case "pending":
+            return {
+                color: "bg-yellow-100 text-yellow-800 border-yellow-300",
+                icon: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z",
+                message: "Your booking request is being reviewed. We'll get back to you soon!",
+            };
+        case "accepted":
+            return {
+                color: "bg-green-100 text-green-800 border-green-300",
+                icon: "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z",
+                message: "Great news! Your booking has been accepted. Check the details below.",
+            };
+        case "denied":
+            return {
+                color: "bg-red-100 text-red-800 border-red-300",
+                icon: "M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z",
+                message: "Unfortunately, we couldn't accept this booking request. Please see the notes below or contact us for more information.",
+            };
+        default:
+            return {
+                color: "bg-gray-100 text-gray-800 border-gray-300",
+                icon: "M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
+                message: "",
+            };
+    }
+}
+
+const statusInfo = booking ? getStatusInfo(booking.status) : null;
+---
+
+<Layout title="My Booking | KowTattys">
+    <div class="container mx-auto px-4 py-12 max-w-4xl">
+        {error ? (
+            <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-8 text-center">
+                <svg class="w-16 h-16 mx-auto text-red-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <h2 class="text-2xl font-bold text-red-600 dark:text-red-400 mb-2">
+                    Error Loading Booking
+                </h2>
+                <p class="text-gray-600 dark:text-gray-400">
+                    There was an error loading your booking. Please try again later.
+                </p>
+                <a href="/" class="inline-block mt-6 text-purple-600 hover:underline">
+                    ← Return to Homepage
+                </a>
+            </div>
+        ) : !booking ? (
+            <div class="bg-gray-50 dark:bg-gray-800 rounded-xl p-8 text-center">
+                <svg class="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                    Booking Not Found
+                </h2>
+                <p class="text-gray-600 dark:text-gray-400">
+                    We couldn't find a booking with this link. Please check the URL or contact us for assistance.
+                </p>
+                <a href="/" class="inline-block mt-6 text-purple-600 hover:underline">
+                    ← Return to Homepage
+                </a>
+            </div>
+        ) : (
+            <div class="space-y-6">
+                <!-- Header -->
+                <div class="text-center mb-8">
+                    <h1 class="text-4xl font-bold font-doto mb-2">My Booking</h1>
+                    <p class="text-muted-foreground">
+                        Track your booking status and communicate with our team
+                    </p>
+                </div>
+
+                <!-- Status Banner -->
+                <div class={`rounded-xl p-6 border ${statusInfo?.color}`}>
+                    <div class="flex items-start gap-4">
+                        <div class="flex-shrink-0">
+                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d={statusInfo?.icon} />
+                            </svg>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-bold capitalize mb-1">
+                                Status: {booking.status}
+                            </h2>
+                            <p class="opacity-80">
+                                {statusInfo?.message}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Booking Details -->
+                    <div class="lg:col-span-2 space-y-6">
+                        <!-- Main Details Card -->
+                        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                                Booking Details
+                            </h3>
+                            <dl class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                        Submitted
+                                    </dt>
+                                    <dd class="mt-1 text-gray-900 dark:text-white">
+                                        {formatDate(booking.created_at)}
+                                    </dd>
+                                </div>
+                                <div>
+                                    <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                        Type
+                                    </dt>
+                                    <dd class="mt-1 text-gray-900 dark:text-white">
+                                        {booking.is_custom ? "Custom Design" : "Flash Design"}
+                                    </dd>
+                                </div>
+                                <div>
+                                    <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                        Size
+                                    </dt>
+                                    <dd class="mt-1 text-gray-900 dark:text-white">
+                                        {booking.tattoo_size}
+                                    </dd>
+                                </div>
+                                <div>
+                                    <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                        Placement
+                                    </dt>
+                                    <dd class="mt-1 text-gray-900 dark:text-white">
+                                        {booking.tattoo_placement}
+                                    </dd>
+                                </div>
+                                {booking.agreed_price && (
+                                    <div>
+                                        <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                            Agreed Price
+                                        </dt>
+                                        <dd class="mt-1 text-gray-900 dark:text-white font-semibold text-green-600">
+                                            ${booking.agreed_price}
+                                        </dd>
+                                    </div>
+                                )}
+                                {booking.scheduled_date && (
+                                    <div>
+                                        <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                            Scheduled Date
+                                        </dt>
+                                        <dd class="mt-1 text-gray-900 dark:text-white font-semibold">
+                                            {formatDate(booking.scheduled_date)}
+                                        </dd>
+                                    </div>
+                                )}
+                            </dl>
+                        </div>
+
+                        <!-- Tattoo Idea -->
+                        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                                Your Tattoo Idea
+                            </h3>
+                            <p class="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                                {booking.tattoo_idea}
+                            </p>
+                        </div>
+
+                        <!-- Reference Photos -->
+                        {booking.reference_photos && booking.reference_photos.length > 0 && (
+                            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                                    Your Reference Photos
+                                </h3>
+                                <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                    {booking.reference_photos.map((photo: string, index: number) => (
+                                        <a
+                                            href={photo}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            class="block aspect-square rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 hover:opacity-80 transition-opacity"
+                                        >
+                                            <img
+                                                src={photo}
+                                                alt={`Reference ${index + 1}`}
+                                                class="w-full h-full object-cover"
+                                            />
+                                        </a>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        <!-- Admin Notes (if any) -->
+                        {booking.admin_notes && (
+                            <div class="bg-purple-50 dark:bg-purple-900/20 rounded-xl border border-purple-200 dark:border-purple-800 p-6">
+                                <h3 class="text-lg font-semibold text-purple-900 dark:text-purple-100 mb-4 flex items-center gap-2">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                                    </svg>
+                                    Note from Artist
+                                </h3>
+                                <p class="text-purple-800 dark:text-purple-200 whitespace-pre-wrap">
+                                    {booking.admin_notes}
+                                </p>
+                            </div>
+                        )}
+                    </div>
+
+                    <!-- Chat Sidebar -->
+                    <div class="lg:col-span-1">
+                        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden sticky top-24">
+                            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
+                                <h3 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                    </svg>
+                                    Chat with Artist
+                                </h3>
+                            </div>
+
+                            <!-- Messages -->
+                            <div
+                                id="messages-container"
+                                class="h-80 overflow-y-auto p-4 space-y-4"
+                            >
+                                {messages.length === 0 ? (
+                                    <div class="text-center py-8">
+                                        <svg class="w-12 h-12 mx-auto text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                        </svg>
+                                        <p class="text-gray-500 dark:text-gray-400 text-sm">
+                                            No messages yet
+                                        </p>
+                                        <p class="text-gray-400 dark:text-gray-500 text-xs mt-1">
+                                            Send a message to start the conversation
+                                        </p>
+                                    </div>
+                                ) : (
+                                    messages.map((msg) => (
+                                        <div class={`flex ${msg.sender_role === "client" ? "justify-end" : "justify-start"}`}>
+                                            <div
+                                                class={`max-w-[85%] rounded-lg px-4 py-2 ${
+                                                    msg.sender_role === "client"
+                                                        ? "bg-purple-600 text-white"
+                                                        : "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white"
+                                                }`}
+                                            >
+                                                <p class="text-sm">{msg.content}</p>
+                                                <p
+                                                    class={`text-xs mt-1 ${
+                                                        msg.sender_role === "client"
+                                                            ? "text-purple-200"
+                                                            : "text-gray-500 dark:text-gray-400"
+                                                    }`}
+                                                >
+                                                    {formatMessageTime(msg.created_at)}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+
+                            <!-- Message Input -->
+                            <div class="p-4 border-t border-gray-200 dark:border-gray-700">
+                                <form id="message-form" class="flex gap-2">
+                                    <input
+                                        type="text"
+                                        id="message-input"
+                                        placeholder="Type a message..."
+                                        class="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                                    />
+                                    <button
+                                        type="submit"
+                                        class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                                    >
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                                        </svg>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Back to Home -->
+                <div class="text-center mt-8">
+                    <a href="/" class="text-purple-600 hover:underline">
+                        ← Back to Homepage
+                    </a>
+                </div>
+            </div>
+        )}
+    </div>
+</Layout>
+
+<script define:vars={{ bookingId: booking?.id }}>
+    window.bookingId = bookingId;
+</script>
+
+<script>
+    import { supabase } from "../../lib/supabase";
+
+    const bookingId = (window as any).bookingId;
+
+    if (!bookingId) {
+        console.error("No booking ID found");
+    }
+
+    const messageForm = document.getElementById("message-form") as HTMLFormElement;
+    const messageInput = document.getElementById("message-input") as HTMLInputElement;
+    const messagesContainer = document.getElementById("messages-container");
+
+    function formatMessageTime(date: Date) {
+        return date.toLocaleTimeString("en-US", {
+            hour: "numeric",
+            minute: "2-digit",
+        });
+    }
+
+    function addMessageToUI(message: { content: string; sender_role: string; created_at: string }) {
+        if (!messagesContainer) return;
+
+        // Remove "no messages" placeholder if exists
+        const placeholder = messagesContainer.querySelector(".text-center.py-8");
+        if (placeholder) {
+            placeholder.remove();
+        }
+
+        const messageDiv = document.createElement("div");
+        messageDiv.className = `flex ${message.sender_role === "client" ? "justify-end" : "justify-start"}`;
+
+        const bubbleClass = message.sender_role === "client"
+            ? "bg-purple-600 text-white"
+            : "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white";
+
+        const timeClass = message.sender_role === "client"
+            ? "text-purple-200"
+            : "text-gray-500 dark:text-gray-400";
+
+        messageDiv.innerHTML = `
+            <div class="max-w-[85%] rounded-lg px-4 py-2 ${bubbleClass}">
+                <p class="text-sm">${message.content}</p>
+                <p class="text-xs mt-1 ${timeClass}">${formatMessageTime(new Date(message.created_at))}</p>
+            </div>
+        `;
+
+        messagesContainer.appendChild(messageDiv);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    messageForm?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const content = messageInput?.value.trim();
+        if (!content || !bookingId) return;
+
+        try {
+            const { data, error } = await supabase
+                .from("messages")
+                .insert({
+                    booking_id: bookingId,
+                    sender_role: "client",
+                    content,
+                })
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            messageInput.value = "";
+            addMessageToUI(data);
+        } catch (err) {
+            console.error("Error sending message:", err);
+            alert("Failed to send message. Please try again.");
+        }
+    });
+
+    // Subscribe to realtime messages
+    if (bookingId) {
+        const channel = supabase
+            .channel(`messages:${bookingId}`)
+            .on(
+                "postgres_changes",
+                {
+                    event: "INSERT",
+                    schema: "public",
+                    table: "messages",
+                    filter: `booking_id=eq.${bookingId}`,
+                },
+                (payload) => {
+                    const message = payload.new as any;
+                    // Only add if it's from the admin (client messages are added immediately)
+                    if (message.sender_role === "admin") {
+                        addMessageToUI(message);
+                    }
+                }
+            )
+            .subscribe();
+    }
+
+    // Scroll to bottom of messages on load
+    if (messagesContainer) {
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+</script>
+
+<style>
+    #messages-container {
+        scrollbar-width: thin;
+        scrollbar-color: hsl(var(--muted)) transparent;
+    }
+
+    #messages-container::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    #messages-container::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    #messages-container::-webkit-scrollbar-thumb {
+        background-color: hsl(var(--muted));
+        border-radius: 3px;
+    }
+</style>
