@@ -139,84 +139,84 @@ const { title, description = "Toronto's premiere tattoo experience" } =
                     </svg>
                 </button>
             </div>
-
-            <!-- Mobile Menu Dropdown -->
-            <div
-                id="mobile-menu"
-                class="hidden md:hidden fixed inset-x-0 top-16 bottom-0 bg-background/95 backdrop-blur-md transition-all duration-300 ease-in-out z-[100] overflow-y-auto"
-            >
-                <nav class="flex flex-col p-8 space-y-2">
-                    <a
-                        href="/"
-                        class="text-2xl py-4 border-b border-foreground/10 hover:text-primary transition-colors w-full"
-                        >Home</a
-                    >
-                    <a
-                        href="/portfolio"
-                        class="text-2xl py-4 border-b border-foreground/10 hover:text-primary transition-colors w-full"
-                        >Portfolio</a
-                    >
-                    <a
-                        href="/flash-designs"
-                        class="text-2xl py-4 border-b border-foreground/10 hover:text-primary transition-colors w-full"
-                        >Flash</a
-                    >
-                    <button
-                        class="booking-trigger text-2xl py-4 border-b border-foreground/10 hover:text-primary transition-colors cursor-pointer bg-transparent border-none font-inherit text-inherit text-left w-full"
-                    >
-                        Book Now
-                    </button>
-                    <a
-                        href="/contact"
-                        class="text-2xl py-4 border-b border-foreground/10 hover:text-primary transition-colors w-full"
-                        >Contact</a
-                    >
-                    <div class="flex items-center gap-6 py-10">
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="28"
-                            height="28"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            class="text-yellow-500"
-                            ><circle cx="12" cy="12" r="5"></circle><path
-                                d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"
-                            ></path></svg
-                        >
-
-                        <button
-                            id="theme-toggle-mobile"
-                            class="relative w-16 h-9 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 transition-colors duration-300 focus:outline-none"
-                            aria-label="Toggle Theme"
-                        >
-                            <div
-                                class="absolute top-[4px] left-[4px] bg-white border-gray-300 border rounded-full h-7 w-7 transition-transform duration-300 dark:translate-x-7 dark:border-gray-600"
-                            >
-                            </div>
-                        </button>
-
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="28"
-                            height="28"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            class="text-gray-700 dark:text-gray-300"
-                            ><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"
-                            ></path></svg
-                        >
-                    </div>
-                </nav>
-            </div>
         </header>
+
+        <!-- Mobile Menu Dropdown -->
+        <div
+            id="mobile-menu"
+            class="fixed inset-x-0 top-16 bottom-0 bg-background/95 backdrop-blur-md transition-all duration-300 ease-in-out z-[100] overflow-y-auto md:hidden opacity-0 pointer-events-none -translate-y-2"
+        >
+            <nav class="flex flex-col p-8 space-y-2">
+                <a
+                    href="/"
+                    class="text-2xl py-4 border-b border-foreground/10 hover:text-primary transition-colors w-full"
+                    >Home</a
+                >
+                <a
+                    href="/portfolio"
+                    class="text-2xl py-4 border-b border-foreground/10 hover:text-primary transition-colors w-full"
+                    >Portfolio</a
+                >
+                <a
+                    href="/flash-designs"
+                    class="text-2xl py-4 border-b border-foreground/10 hover:text-primary transition-colors w-full"
+                    >Flash</a
+                >
+                <button
+                    class="booking-trigger text-2xl py-4 border-b border-foreground/10 hover:text-primary transition-colors cursor-pointer bg-transparent border-none font-inherit text-inherit text-left w-full"
+                >
+                    Book Now
+                </button>
+                <a
+                    href="/contact"
+                    class="text-2xl py-4 border-b border-foreground/10 hover:text-primary transition-colors w-full"
+                    >Contact</a
+                >
+                <div class="flex items-center gap-6 py-10">
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="28"
+                        height="28"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        class="text-yellow-500"
+                        ><circle cx="12" cy="12" r="5"></circle><path
+                            d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"
+                        ></path></svg
+                    >
+
+                    <button
+                        id="theme-toggle-mobile"
+                        class="relative w-16 h-9 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 transition-colors duration-300 focus:outline-none"
+                        aria-label="Toggle Theme"
+                    >
+                        <div
+                            class="absolute top-[4px] left-[4px] bg-white border-gray-300 border rounded-full h-7 w-7 transition-transform duration-300 dark:translate-x-7 dark:border-gray-600"
+                        >
+                        </div>
+                    </button>
+
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="28"
+                        height="28"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        class="text-gray-700 dark:text-gray-300"
+                        ><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"
+                        ></path></svg
+                    >
+                </div>
+            </nav>
+        </div>
 
         <main class="flex-grow pt-16">
             <slot />
@@ -271,20 +271,76 @@ const { title, description = "Toronto's premiere tattoo experience" } =
                     ?.addEventListener("click", handleToggleClick);
             });
 
-            // Vanilla JS for Mobile Menu Toggle
-            const btn = document.getElementById("mobile-menu-btn");
-            const menu = document.getElementById("mobile-menu");
+            // Mobile Menu Toggle Logic
+            const mobileMenuBtn = document.getElementById("mobile-menu-btn");
+            const mobileMenu = document.getElementById("mobile-menu");
+            const mobileMenuLinks = mobileMenu?.querySelectorAll(
+                "a, button.booking-trigger",
+            );
 
-            btn?.addEventListener("click", () => {
-                menu?.classList.toggle("hidden");
+            const toggleMobileMenu = () => {
+                const isOpen = mobileMenu?.classList.contains("opacity-100");
+
+                if (!isOpen) {
+                    mobileMenu?.classList.remove(
+                        "opacity-0",
+                        "pointer-events-none",
+                        "-translate-y-2",
+                    );
+                    mobileMenu?.classList.add(
+                        "opacity-100",
+                        "pointer-events-auto",
+                        "translate-y-0",
+                    );
+                    document.body.style.overflow = "hidden";
+                } else {
+                    mobileMenu?.classList.add(
+                        "opacity-0",
+                        "pointer-events-none",
+                        "-translate-y-2",
+                    );
+                    mobileMenu?.classList.remove(
+                        "opacity-100",
+                        "pointer-events-auto",
+                        "translate-y-0",
+                    );
+                    document.body.style.overflow = "";
+                }
+            };
+
+            mobileMenuBtn?.addEventListener("click", (e) => {
+                e.stopPropagation();
+                toggleMobileMenu();
+            });
+
+            // Close menu when clicking links
+            mobileMenuLinks?.forEach((link) => {
+                link.addEventListener("click", () => {
+                    if (mobileMenu?.classList.contains("opacity-100")) {
+                        toggleMobileMenu();
+                    }
+                });
+            });
+
+            // Close menu when clicking outside
+            document.addEventListener("click", (e) => {
+                const target = e.target;
+                if (
+                    target instanceof Node &&
+                    mobileMenu?.classList.contains("opacity-100") &&
+                    mobileMenu &&
+                    !mobileMenu.contains(target) &&
+                    mobileMenuBtn &&
+                    !mobileMenuBtn.contains(target)
+                ) {
+                    toggleMobileMenu();
+                }
             });
 
             // Booking Modal Triggers
             document.querySelectorAll(".booking-trigger").forEach((trigger) => {
                 trigger.addEventListener("click", (e) => {
                     e.preventDefault();
-                    // Close mobile menu if open
-                    menu?.classList.add("hidden");
                     // Dispatch custom event to open booking modal
                     window.dispatchEvent(new CustomEvent("openBookingModal"));
                 });
