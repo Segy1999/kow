@@ -74,13 +74,17 @@ try {
     <!-- Portfolio Tab -->
     <div id="tab-portfolio" class="tab-content">
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            <h3
+                class="text-lg font-semibold text-gray-900 dark:text-white mb-4"
+            >
                 Upload New Portfolio Image
             </h3>
             <form id="portfolio-form" class="space-y-4">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        <label
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                        >
                             Image
                         </label>
                         <input
@@ -92,7 +96,9 @@ try {
                         />
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        <label
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                        >
                             Title
                         </label>
                         <input
@@ -105,15 +111,16 @@ try {
                     </div>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <label
+                        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                    >
                         Description
                     </label>
                     <textarea
                         id="portfolio-description"
                         rows="2"
                         class="w-full px-4 py-3 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        placeholder="Enter description"
-                    ></textarea>
+                        placeholder="Enter description"></textarea>
                 </div>
                 <div class="flex items-center gap-4">
                     <label class="flex items-center gap-2 cursor-pointer">
@@ -138,70 +145,112 @@ try {
 
         <!-- Portfolio Grid -->
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            <h3
+                class="text-lg font-semibold text-gray-900 dark:text-white mb-4"
+            >
                 Portfolio Images ({portfolioImages.length})
             </h3>
-            {portfolioImages.length === 0 ? (
-                <div class="text-center py-12">
-                    <svg class="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    <p class="text-gray-500 dark:text-gray-400">No portfolio images yet</p>
-                </div>
-            ) : (
-                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    {portfolioImages.map((image) => (
-                        <div class="relative group rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700">
-                            <img
-                                src={image.url}
-                                alt={image.title}
-                                class="w-full aspect-square object-cover"
+            {
+                portfolioImages.length === 0 ? (
+                    <div class="text-center py-12">
+                        <svg
+                            class="w-16 h-16 mx-auto text-gray-400 mb-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
                             />
-                            <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 p-4">
-                                <p class="text-white text-sm font-medium text-center">{image.title}</p>
-                                {image.is_featured && (
-                                    <span class="px-2 py-1 bg-yellow-500 text-white text-xs rounded">Featured</span>
-                                )}
-                                <div class="flex gap-2 mt-2">
-                                    <button
-                                        class="toggle-featured-btn p-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors"
-                                        data-id={image.id}
-                                        data-featured={image.is_featured}
-                                        title={image.is_featured ? "Remove from featured" : "Add to featured"}
-                                    >
-                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                                        </svg>
-                                    </button>
-                                    <button
-                                        class="delete-image-btn p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-                                        data-id={image.id}
-                                        data-category="portfolio"
-                                        title="Delete"
-                                    >
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                        </svg>
-                                    </button>
+                        </svg>
+                        <p class="text-gray-500 dark:text-gray-400">
+                            No portfolio images yet
+                        </p>
+                    </div>
+                ) : (
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        {portfolioImages.map((image) => (
+                            <div class="relative group rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700">
+                                <img
+                                    src={image.url}
+                                    alt={image.title}
+                                    class="w-full aspect-square object-cover"
+                                />
+                                <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 p-4">
+                                    <p class="text-white text-sm font-medium text-center">
+                                        {image.title}
+                                    </p>
+                                    {image.is_featured && (
+                                        <span class="px-2 py-1 bg-yellow-500 text-white text-xs rounded">
+                                            Featured
+                                        </span>
+                                    )}
+                                    <div class="flex gap-2 mt-2">
+                                        <button
+                                            class="toggle-featured-btn p-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors"
+                                            data-id={image.id}
+                                            data-featured={image.is_featured}
+                                            title={
+                                                image.is_featured
+                                                    ? "Remove from featured"
+                                                    : "Add to featured"
+                                            }
+                                        >
+                                            <svg
+                                                class="w-4 h-4"
+                                                fill="currentColor"
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                                            </svg>
+                                        </button>
+                                        <button
+                                            class="delete-image-btn p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                                            data-id={image.id}
+                                            data-category="portfolio"
+                                            title="Delete"
+                                        >
+                                            <svg
+                                                class="w-4 h-4"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <path
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                    stroke-width="2"
+                                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                                />
+                                            </svg>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    ))}
-                </div>
-            )}
+                        ))}
+                    </div>
+                )
+            }
         </div>
     </div>
 
     <!-- Flash Tab -->
     <div id="tab-flash" class="tab-content hidden">
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            <h3
+                class="text-lg font-semibold text-gray-900 dark:text-white mb-4"
+            >
                 Add New Flash Design
             </h3>
             <form id="flash-form" class="space-y-4">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        <label
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                        >
                             Image
                         </label>
                         <input
@@ -213,7 +262,9 @@ try {
                         />
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        <label
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                        >
                             Title
                         </label>
                         <input
@@ -227,7 +278,9 @@ try {
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        <label
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                        >
                             Price ($)
                         </label>
                         <input
@@ -240,7 +293,9 @@ try {
                         />
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        <label
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                        >
                             Size
                         </label>
                         <input
@@ -252,15 +307,16 @@ try {
                     </div>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <label
+                        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                    >
                         Description
                     </label>
                     <textarea
                         id="flash-description"
                         rows="2"
                         class="w-full px-4 py-3 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        placeholder="Enter description"
-                    ></textarea>
+                        placeholder="Enter description"></textarea>
                 </div>
                 <button
                     type="submit"
@@ -273,44 +329,76 @@ try {
 
         <!-- Flash Grid -->
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            <h3
+                class="text-lg font-semibold text-gray-900 dark:text-white mb-4"
+            >
                 Flash Designs ({flashDesigns.length})
             </h3>
-            {flashDesigns.length === 0 ? (
-                <div class="text-center py-12">
-                    <svg class="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
-                    <p class="text-gray-500 dark:text-gray-400">No flash designs yet</p>
-                </div>
-            ) : (
-                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    {flashDesigns.map((design) => (
-                        <div class="relative group rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700">
-                            <img
-                                src={design.url}
-                                alt={design.title}
-                                class="w-full aspect-square object-cover"
+            {
+                flashDesigns.length === 0 ? (
+                    <div class="text-center py-12">
+                        <svg
+                            class="w-16 h-16 mx-auto text-gray-400 mb-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M13 10V3L4 14h7v7l9-11h-7z"
                             />
-                            <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 p-4">
-                                <p class="text-white text-sm font-medium text-center">{design.title}</p>
-                                <p class="text-green-400 font-bold">${design.price}</p>
-                                <p class="text-gray-300 text-xs">{design.size}</p>
-                                <button
-                                    class="delete-image-btn mt-2 p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-                                    data-id={design.id}
-                                    data-category="flash"
-                                    title="Delete"
-                                >
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                    </svg>
-                                </button>
+                        </svg>
+                        <p class="text-gray-500 dark:text-gray-400">
+                            No flash designs yet
+                        </p>
+                    </div>
+                ) : (
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        {flashDesigns.map((design) => (
+                            <div class="relative group rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700">
+                                <img
+                                    src={design.url}
+                                    alt={design.title}
+                                    class="w-full aspect-square object-cover"
+                                />
+                                <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 p-4">
+                                    <p class="text-white text-sm font-medium text-center">
+                                        {design.title}
+                                    </p>
+                                    <p class="text-green-400 font-bold">
+                                        ${design.price}
+                                    </p>
+                                    <p class="text-gray-300 text-xs">
+                                        {design.size}
+                                    </p>
+                                    <button
+                                        class="delete-image-btn mt-2 p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                                        data-id={design.id}
+                                        data-category="flash"
+                                        title="Delete"
+                                    >
+                                        <svg
+                                            class="w-4 h-4"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                stroke-width="2"
+                                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                            />
+                                        </svg>
+                                    </button>
+                                </div>
                             </div>
-                        </div>
-                    ))}
-                </div>
-            )}
+                        ))}
+                    </div>
+                )
+            }
         </div>
     </div>
 
@@ -319,12 +407,16 @@ try {
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <!-- Contact Info -->
             <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                <h3
+                    class="text-lg font-semibold text-gray-900 dark:text-white mb-4"
+                >
                     Contact Information
                 </h3>
                 <form id="contact-form" class="space-y-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        <label
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                        >
                             Contact Page Content
                         </label>
                         <textarea
@@ -332,7 +424,8 @@ try {
                             rows="10"
                             class="w-full px-4 py-3 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 font-mono text-sm"
                             placeholder="Enter contact information (supports Markdown)"
-                        >{contactInfo}</textarea>
+                            >{contactInfo}</textarea
+                        >
                     </div>
                     <p class="text-xs text-gray-500 dark:text-gray-400">
                         Supports basic Markdown formatting
@@ -348,12 +441,16 @@ try {
 
             <!-- Policy Text -->
             <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                <h3
+                    class="text-lg font-semibold text-gray-900 dark:text-white mb-4"
+                >
                     Policy & Terms
                 </h3>
                 <form id="policy-form" class="space-y-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        <label
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                        >
                             Policy Page Content
                         </label>
                         <textarea
@@ -361,7 +458,8 @@ try {
                             rows="10"
                             class="w-full px-4 py-3 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 font-mono text-sm"
                             placeholder="Enter policy text (supports Markdown)"
-                        >{policyText}</textarea>
+                            >{policyText}</textarea
+                        >
                     </div>
                     <p class="text-xs text-gray-500 dark:text-gray-400">
                         Supports basic Markdown formatting
@@ -378,11 +476,31 @@ try {
     </div>
 
     <!-- Loading Overlay -->
-    <div id="loading-overlay" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
-        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 flex items-center gap-4">
-            <svg class="animate-spin h-6 w-6 text-purple-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+    <div
+        id="loading-overlay"
+        class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden"
+    >
+        <div
+            class="bg-white dark:bg-gray-800 rounded-xl p-6 flex items-center gap-4"
+        >
+            <svg
+                class="animate-spin h-6 w-6 text-purple-600"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+            >
+                <circle
+                    class="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    stroke-width="4"></circle>
+                <path
+                    class="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
             </svg>
             <span class="text-gray-900 dark:text-white">Processing...</span>
         </div>
@@ -413,10 +531,18 @@ try {
             // Update button styles
             tabBtns.forEach((b) => {
                 b.classList.remove("border-purple-600", "text-purple-600");
-                b.classList.add("border-transparent", "text-gray-500", "dark:text-gray-400");
+                b.classList.add(
+                    "border-transparent",
+                    "text-gray-500",
+                    "dark:text-gray-400",
+                );
             });
             btn.classList.add("border-purple-600", "text-purple-600");
-            btn.classList.remove("border-transparent", "text-gray-500", "dark:text-gray-400");
+            btn.classList.remove(
+                "border-transparent",
+                "text-gray-500",
+                "dark:text-gray-400",
+            );
 
             // Show/hide content
             tabContents.forEach((content) => {
@@ -427,15 +553,27 @@ try {
     });
 
     // Portfolio form
-    const portfolioForm = document.getElementById("portfolio-form") as HTMLFormElement;
+    const portfolioForm = document.getElementById(
+        "portfolio-form",
+    ) as HTMLFormElement;
     portfolioForm?.addEventListener("submit", async (e) => {
         e.preventDefault();
         showLoading();
 
-        const fileInput = document.getElementById("portfolio-file") as HTMLInputElement;
-        const title = (document.getElementById("portfolio-title") as HTMLInputElement).value;
-        const description = (document.getElementById("portfolio-description") as HTMLTextAreaElement).value;
-        const isFeatured = (document.getElementById("portfolio-featured") as HTMLInputElement).checked;
+        const fileInput = document.getElementById(
+            "portfolio-file",
+        ) as HTMLInputElement;
+        const title = (
+            document.getElementById("portfolio-title") as HTMLInputElement
+        ).value;
+        const description = (
+            document.getElementById(
+                "portfolio-description",
+            ) as HTMLTextAreaElement
+        ).value;
+        const isFeatured = (
+            document.getElementById("portfolio-featured") as HTMLInputElement
+        ).checked;
 
         const file = fileInput.files?.[0];
         if (!file) {
@@ -447,14 +585,17 @@ try {
         try {
             // Upload to storage
             const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, "")}`;
-            const { data: uploadData, error: uploadError } = await supabase.storage
-                .from("portfolio-images")
-                .upload(fileName, file);
+            const { data: uploadData, error: uploadError } =
+                await supabase.storage
+                    .from("portfolio-images")
+                    .upload(fileName, file);
 
             if (uploadError) throw uploadError;
 
             // Get public URL
-            const { data: { publicUrl } } = supabase.storage
+            const {
+                data: { publicUrl },
+            } = supabase.storage
                 .from("portfolio-images")
                 .getPublicUrl(fileName);
 
@@ -486,11 +627,20 @@ try {
         e.preventDefault();
         showLoading();
 
-        const fileInput = document.getElementById("flash-file") as HTMLInputElement;
-        const title = (document.getElementById("flash-title") as HTMLInputElement).value;
-        const price = parseFloat((document.getElementById("flash-price") as HTMLInputElement).value);
-        const size = (document.getElementById("flash-size") as HTMLInputElement).value;
-        const description = (document.getElementById("flash-description") as HTMLTextAreaElement).value;
+        const fileInput = document.getElementById(
+            "flash-file",
+        ) as HTMLInputElement;
+        const title = (
+            document.getElementById("flash-title") as HTMLInputElement
+        ).value;
+        const price = parseFloat(
+            (document.getElementById("flash-price") as HTMLInputElement).value,
+        );
+        const size = (document.getElementById("flash-size") as HTMLInputElement)
+            .value;
+        const description = (
+            document.getElementById("flash-description") as HTMLTextAreaElement
+        ).value;
 
         const file = fileInput.files?.[0];
         if (!file) {
@@ -502,16 +652,17 @@ try {
         try {
             // Upload to storage
             const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, "")}`;
-            const { data: uploadData, error: uploadError } = await supabase.storage
-                .from("flash-images")
-                .upload(fileName, file);
+            const { data: uploadData, error: uploadError } =
+                await supabase.storage
+                    .from("flash-images")
+                    .upload(fileName, file);
 
             if (uploadError) throw uploadError;
 
             // Get public URL
-            const { data: { publicUrl } } = supabase.storage
-                .from("flash-images")
-                .getPublicUrl(fileName);
+            const {
+                data: { publicUrl },
+            } = supabase.storage.from("flash-images").getPublicUrl(fileName);
 
             // Insert into database
             const { error: insertError } = await supabase
@@ -538,17 +689,28 @@ try {
     });
 
     // Contact form
-    const contactForm = document.getElementById("contact-form") as HTMLFormElement;
+    const contactForm = document.getElementById(
+        "contact-form",
+    ) as HTMLFormElement;
     contactForm?.addEventListener("submit", async (e) => {
         e.preventDefault();
         showLoading();
 
-        const contactText = (document.getElementById("contact-text") as HTMLTextAreaElement).value;
+        const contactText = (
+            document.getElementById("contact-text") as HTMLTextAreaElement
+        ).value;
 
         try {
             const { error } = await supabase
                 .from("site_settings")
-                .upsert({ key: "contact_info", value: contactText, updated_at: new Date().toISOString() }, { onConflict: "key" });
+                .upsert(
+                    {
+                        key: "contact_info",
+                        value: contactText,
+                        created_at: new Date().toISOString(),
+                    },
+                    { onConflict: "key" },
+                );
 
             if (error) throw error;
 
@@ -562,17 +724,28 @@ try {
     });
 
     // Policy form
-    const policyForm = document.getElementById("policy-form") as HTMLFormElement;
+    const policyForm = document.getElementById(
+        "policy-form",
+    ) as HTMLFormElement;
     policyForm?.addEventListener("submit", async (e) => {
         e.preventDefault();
         showLoading();
 
-        const policyText = (document.getElementById("policy-text") as HTMLTextAreaElement).value;
+        const policyText = (
+            document.getElementById("policy-text") as HTMLTextAreaElement
+        ).value;
 
         try {
             const { error } = await supabase
                 .from("site_settings")
-                .upsert({ key: "policy_text", value: policyText, updated_at: new Date().toISOString() }, { onConflict: "key" });
+                .upsert(
+                    {
+                        key: "policy_text",
+                        value: policyText,
+                        created_at: new Date().toISOString(),
+                    },
+                    { onConflict: "key" },
+                );
 
             if (error) throw error;
 
@@ -589,7 +762,8 @@ try {
     document.querySelectorAll(".toggle-featured-btn").forEach((btn) => {
         btn.addEventListener("click", async () => {
             const id = btn.getAttribute("data-id");
-            const currentlyFeatured = btn.getAttribute("data-featured") === "true";
+            const currentlyFeatured =
+                btn.getAttribute("data-featured") === "true";
 
             showLoading();
 

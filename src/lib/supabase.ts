@@ -76,7 +76,7 @@ export interface SiteSetting {
   id: string;
   key: string;
   value: string;
-  updated_at: string;
+  created_at: string;
 }
 
 export type MessageSenderRole = "admin" | "client";
@@ -183,7 +183,7 @@ export async function setSiteSetting(key: string, value: string) {
   const { data, error } = await supabase
     .from("site_settings")
     .upsert(
-      { key, value, updated_at: new Date().toISOString() },
+      { key, value, created_at: new Date().toISOString() },
       { onConflict: "key" },
     )
     .select()
