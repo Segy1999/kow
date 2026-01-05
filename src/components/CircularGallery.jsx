@@ -18,6 +18,18 @@ function debounce(func, wait) {
   };
 }
 
+// Utility: Throttle function for mouse/touch events
+function throttle(func, limit) {
+  let lastCall = 0;
+  return function (...args) {
+    const now = Date.now();
+    if (now - lastCall >= limit) {
+      lastCall = now;
+      return func.apply(this, args);
+    }
+  };
+}
+
 // Utility: Linear interpolation
 function lerp(p1, p2, t) {
   return p1 + (p2 - p1) * t;
@@ -354,17 +366,60 @@ class App {
     document.documentElement.classList.remove("no-js");
     this.container = container;
     this.scrollSpeed = scrollSpeed;
-    this.scroll = { ease: scrollEase, current: 0, target: 0, last: 0 };
+    this.scroll = { ease: scrollEase, current: 0, target: 0, last: 0, velocity: 0 };
     this.onCheckDebounce = debounce(this.onCheck, 200);
     this.onItemClick = onItemClick;
+
+    // Animation state management
+    this.isVisible = true;
+    this.isPageVisible = true;
+    this.isInteracting = false;
+    this.lastInteractionTime = 0;
+    this.momentumDecayDelay = 2000; // ms before momentum decay kicks in
+
     this.createRenderer();
     this.createCamera();
     this.createScene();
     this.onResize();
     this.createGeometry();
     this.createMedias(items, bend, textColor, borderRadius, font);
+    this.setupVisibilityObserver();
     this.update();
     this.addEventListeners();
+  }
+
+  setupVisibilityObserver() {
+    // Intersection Observer to pause when off-screen
+    this.observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          this.isVisible = entry.isIntersecting;
+          this.handleVisibilityChange();
+        });
+      },
+      { threshold: 0.1 }
+    );
+    this.observer.observe(this.container);
+
+    // Page Visibility API
+    this.boundVisibilityChange = () => {
+      this.isPageVisible = !document.hidden;
+      this.handleVisibilityChange();
+    };
+    document.addEventListener('visibilitychange', this.boundVisibilityChange);
+  }
+
+  handleVisibilityChange() {
+    if (this.isVisible && this.isPageVisible) {
+      if (!this.raf) {
+        this.raf = window.requestAnimationFrame(this.update.bind(this));
+      }
+    } else {
+      if (this.raf) {
+        window.cancelAnimationFrame(this.raf);
+        this.raf = null;
+      }
+    }
   }
 
   createRenderer() {
@@ -453,6 +508,8 @@ class App {
   onTouchDown(e) {
     this.isDown = true;
     this.isDragging = false;
+    this.isInteracting = true;
+    this.lastInteractionTime = Date.now();
     this.scroll.position = this.scroll.current;
     this.start = e.touches ? e.touches[0].clientX : e.clientX;
     this.startY = e.touches ? e.touches[0].clientY : e.clientY;
@@ -495,6 +552,8 @@ class App {
   }
 
   onWheel(e) {
+    this.isInteracting = true;
+    this.lastInteractionTime = Date.now();
     const delta = e.deltaY || e.wheelDelta || e.detail;
     this.scroll.target +=
       (delta > 0 ? this.scrollSpeed : -this.scrollSpeed) * 0.2;
@@ -554,25 +613,43 @@ class App {
   }
 
   update() {
+    // Momentum decay when not interacting
+    const now = Date.now();
+    if (now - this.lastInteractionTime > this.momentumDecayDelay) {
+      this.isInteracting = false;
+    }
+
+    // Use eased scrolling with velocity tracking
+    const prevCurrent = this.scroll.current;
     this.scroll.current = lerp(
       this.scroll.current,
       this.scroll.target,
       this.scroll.ease,
     );
+    this.scroll.velocity = this.scroll.current - prevCurrent;
+
     const direction = this.scroll.current > this.scroll.last ? "right" : "left";
     if (this.medias) {
       this.medias.forEach((media) => media.update(this.scroll, direction));
     }
     this.renderer.render({ scene: this.scene, camera: this.camera });
     this.scroll.last = this.scroll.current;
-    this.raf = window.requestAnimationFrame(this.update.bind(this));
+
+    // Only continue animation loop if visible
+    if (this.isVisible && this.isPageVisible) {
+      this.raf = window.requestAnimationFrame(this.update.bind(this));
+    } else {
+      this.raf = null;
+    }
   }
 
   addEventListeners() {
-    this.boundOnResize = this.onResize.bind(this);
+    // Throttled resize handler (200ms delay)
+    this.boundOnResize = debounce(this.onResize.bind(this), 200);
     this.boundOnWheel = this.onWheel.bind(this);
     this.boundOnTouchDown = this.onTouchDown.bind(this);
-    this.boundOnTouchMove = this.onTouchMove.bind(this);
+    // Throttle mouse/touch move to reduce event frequency
+    this.boundOnTouchMove = throttle(this.onTouchMove.bind(this), 16);
     this.boundOnTouchUp = this.onTouchUp.bind(this);
     this.boundOnClick = this.onClick.bind(this);
     window.addEventListener("resize", this.boundOnResize);
@@ -599,6 +676,15 @@ class App {
     window.removeEventListener("touchmove", this.boundOnTouchMove);
     window.removeEventListener("touchend", this.boundOnTouchUp);
     this.container.removeEventListener("click", this.boundOnClick);
+
+    // Cleanup visibility observers
+    if (this.observer) {
+      this.observer.disconnect();
+    }
+    if (this.boundVisibilityChange) {
+      document.removeEventListener('visibilitychange', this.boundVisibilityChange);
+    }
+
     if (
       this.renderer &&
       this.renderer.gl &&

@@ -1,3 +1,4 @@
+/* Google Fonts with font-display: swap for faster initial render */
 @import url("https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=Great+Vibes:&display=swap");
@@ -146,11 +147,9 @@
     position: relative;
     border-radius: var(--radius);
     overflow: hidden;
-    background: linear-gradient(
-        135deg,
-        hsl(var(--background) / 0.5) 0%,
-        hsl(var(--muted) / 0.3) 100%
-    );
+    background: linear-gradient(135deg,
+            hsl(var(--background) / 0.5) 0%,
+            hsl(var(--muted) / 0.3) 100%);
 }
 
 .gallery-instructions {
@@ -173,7 +172,7 @@
 }
 
 .gallery-wrapper:hover .gallery-instructions,
-.circular-gallery:hover + .gallery-instructions {
+.circular-gallery:hover+.gallery-instructions {
     opacity: 0.9;
 }
 
@@ -240,6 +239,7 @@
     from {
         opacity: 0;
     }
+
     to {
         opacity: 1;
     }
@@ -259,6 +259,7 @@
         opacity: 0;
         transform: translateX(30px);
     }
+
     to {
         opacity: 1;
         transform: translateX(0);
@@ -270,6 +271,7 @@
         opacity: 1;
         transform: translateX(0);
     }
+
     to {
         opacity: 0;
         transform: translateX(-30px);
@@ -290,6 +292,7 @@
         opacity: 0;
         transform: translateX(-30px);
     }
+
     to {
         opacity: 1;
         transform: translateX(0);
@@ -301,6 +304,7 @@
         opacity: 1;
         transform: translateX(0);
     }
+
     to {
         opacity: 0;
         transform: translateX(30px);
@@ -321,6 +325,7 @@
         opacity: 0;
         transform: scale(0.98);
     }
+
     to {
         opacity: 1;
         transform: scale(1);
@@ -332,17 +337,14 @@
         opacity: 1;
         transform: scale(1);
     }
+
     to {
         opacity: 0;
         transform: scale(0.98);
     }
 }
 
-/* Booking trigger button styles */
-.booking-trigger {
-    font-family: inherit;
-    font-size: inherit;
-}
+
 
 /* Ensure modal displays above everything */
 #booking-modal {
@@ -370,14 +372,17 @@
 }
 
 @keyframes shake {
+
     0%,
     100% {
         transform: translateX(0);
     }
+
     20%,
     60% {
         transform: translateX(-4px);
     }
+
     40%,
     80% {
         transform: translateX(4px);

@@ -2,7 +2,7 @@
 import AdminLayout from "../../layouts/AdminLayout.astro";
 import { supabase } from "../../lib/supabase";
 
-// Fetch booking statistics
+// Fetch booking statistics - using Promise.all for parallel fetching
 let pendingCount = 0;
 let acceptedCount = 0;
 let deniedCount = 0;
@@ -10,35 +10,37 @@ let totalBookings = 0;
 let recentBookings: any[] = [];
 
 try {
-    // Get counts by status
-    const { count: pending } = await supabase
-        .from("bookings")
-        .select("*", { count: "exact", head: true })
-        .eq("status", "pending");
+    // Parallel fetch all data for better performance
+    const [pendingResult, acceptedResult, deniedResult, recentResult] =
+        await Promise.all([
+            // Get counts by status (only counting, no data needed)
+            supabase
+                .from("bookings")
+                .select("id", { count: "exact", head: true })
+                .eq("status", "pending"),
+            supabase
+                .from("bookings")
+                .select("id", { count: "exact", head: true })
+                .eq("status", "accepted"),
+            supabase
+                .from("bookings")
+                .select("id", { count: "exact", head: true })
+                .eq("status", "denied"),
+            // Get recent bookings - select only needed fields
+            supabase
+                .from("bookings")
+                .select(
+                    "id, first_name, last_name, tattoo_idea, status, created_at",
+                )
+                .order("created_at", { ascending: false })
+                .limit(5),
+        ]);
 
-    const { count: accepted } = await supabase
-        .from("bookings")
-        .select("*", { count: "exact", head: true })
-        .eq("status", "accepted");
-
-    const { count: denied } = await supabase
-        .from("bookings")
-        .select("*", { count: "exact", head: true })
-        .eq("status", "denied");
-
-    pendingCount = pending || 0;
-    acceptedCount = accepted || 0;
-    deniedCount = denied || 0;
+    pendingCount = pendingResult.count || 0;
+    acceptedCount = acceptedResult.count || 0;
+    deniedCount = deniedResult.count || 0;
     totalBookings = pendingCount + acceptedCount + deniedCount;
-
-    // Get recent bookings
-    const { data: recent } = await supabase
-        .from("bookings")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(5);
-
-    recentBookings = recent || [];
+    recentBookings = recentResult.data || [];
 } catch (error) {
     console.error("Error fetching dashboard data:", error);
 }
@@ -73,14 +75,20 @@ function getStatusColor(status: string) {
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    <p
+                        class="text-sm font-medium text-gray-500 dark:text-gray-400"
+                    >
                         Total Bookings
                     </p>
-                    <p class="text-3xl font-bold text-gray-900 dark:text-white mt-1">
+                    <p
+                        class="text-3xl font-bold text-gray-900 dark:text-white mt-1"
+                    >
                         {totalBookings}
                     </p>
                 </div>
-                <div class="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-full">
+                <div
+                    class="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-full"
+                >
                     <svg
                         class="w-6 h-6 text-purple-600 dark:text-purple-400"
                         fill="none"
@@ -102,14 +110,18 @@ function getStatusColor(status: string) {
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    <p
+                        class="text-sm font-medium text-gray-500 dark:text-gray-400"
+                    >
                         Pending
                     </p>
                     <p class="text-3xl font-bold text-yellow-600 mt-1">
                         {pendingCount}
                     </p>
                 </div>
-                <div class="p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-full">
+                <div
+                    class="p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-full"
+                >
                     <svg
                         class="w-6 h-6 text-yellow-600"
                         fill="none"
@@ -131,7 +143,9 @@ function getStatusColor(status: string) {
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    <p
+                        class="text-sm font-medium text-gray-500 dark:text-gray-400"
+                    >
                         Accepted
                     </p>
                     <p class="text-3xl font-bold text-green-600 mt-1">
@@ -160,7 +174,9 @@ function getStatusColor(status: string) {
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    <p
+                        class="text-sm font-medium text-gray-500 dark:text-gray-400"
+                    >
                         Denied
                     </p>
                     <p class="text-3xl font-bold text-red-600 mt-1">
@@ -188,7 +204,9 @@ function getStatusColor(status: string) {
 
     <!-- Recent Bookings -->
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm">
-        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+        <div
+            class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between"
+        >
             <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
                 Recent Bookings
             </h2>
@@ -273,7 +291,9 @@ function getStatusColor(status: string) {
             class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow group"
         >
             <div class="flex items-center gap-4">
-                <div class="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg group-hover:bg-purple-200 dark:group-hover:bg-purple-900/50 transition-colors">
+                <div
+                    class="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg group-hover:bg-purple-200 dark:group-hover:bg-purple-900/50 transition-colors"
+                >
                     <svg
                         class="w-6 h-6 text-purple-600 dark:text-purple-400"
                         fill="none"
@@ -304,7 +324,9 @@ function getStatusColor(status: string) {
             class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow group"
         >
             <div class="flex items-center gap-4">
-                <div class="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg group-hover:bg-blue-200 dark:group-hover:bg-blue-900/50 transition-colors">
+                <div
+                    class="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg group-hover:bg-blue-200 dark:group-hover:bg-blue-900/50 transition-colors"
+                >
                     <svg
                         class="w-6 h-6 text-blue-600 dark:text-blue-400"
                         fill="none"
@@ -336,7 +358,9 @@ function getStatusColor(status: string) {
             class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow group"
         >
             <div class="flex items-center gap-4">
-                <div class="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg group-hover:bg-green-200 dark:group-hover:bg-green-900/50 transition-colors">
+                <div
+                    class="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg group-hover:bg-green-200 dark:group-hover:bg-green-900/50 transition-colors"
+                >
                     <svg
                         class="w-6 h-6 text-green-600 dark:text-green-400"
                         fill="none"

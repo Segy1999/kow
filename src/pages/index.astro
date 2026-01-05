@@ -75,8 +75,12 @@ try {
                   <img
                     src={artwork.src}
                     alt={artwork.title}
+                    width="400"
+                    height="533"
                     class="w-full h-full object-cover rounded-lg"
-                    loading="lazy"
+                    loading={index < 3 ? "eager" : "lazy"}
+                    decoding="async"
+                    fetchpriority={index < 2 ? "high" : "auto"}
                   />
                   <div
                     class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-lg"
@@ -132,24 +136,78 @@ try {
 </Layout>
 
 <script>
-  // Vanilla JS Particle + Shooting Star Animation
+  // Optimized Vanilla JS Particle + Shooting Star Animation
   document.addEventListener('DOMContentLoaded', () => {
     const canvas = document.getElementById('particles-canvas');
     if (!canvas || !(canvas instanceof HTMLCanvasElement)) return;
 
+    // Check for reduced motion preference - show static fallback
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReducedMotion) {
+      // Draw static starfield and exit
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = window.innerWidth * dpr;
+      canvas.height = window.innerHeight * dpr;
+      canvas.style.width = window.innerWidth + 'px';
+      canvas.style.height = window.innerHeight + 'px';
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      
+      // Draw static stars
+      const starCount = 200;
+      for (let i = 0; i < starCount; i++) {
+        const x = Math.random() * window.innerWidth;
+        const y = Math.random() * window.innerHeight;
+        const size = Math.random() * 2 + 0.5;
+        const alpha = Math.random() * 0.6 + 0.2;
+        ctx.beginPath();
+        ctx.arc(x, y, size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+        ctx.fill();
+      }
+      return;
+    }
+
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const dpr = window.devicePixelRatio || 1;
+    // Cap DPR at 2 to reduce canvas size on 3x+ displays
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const particles = [];
     const shootingStars = [];
     const mouse = { x: 0, y: 0, isPressed: false };
+    
+    // Reduce particle count on mobile devices
+    const isMobile = window.innerWidth < 768;
+    const baseParticleCount = isMobile ? 800 : 2000;
+    
     const config = {
-      quantity: 120,
+      quantity: baseParticleCount,
       staticity: 50,
       ease: 50,
       baseSize: 0.4,
     };
+
+    // Animation state management
+    let animationId = null;
+    let isVisible = true;
+    let isPageVisible = true;
+    let lastFrameTime = 0;
+    let frameCount = 0;
+    const targetFPS = 60;
+    const frameInterval = 1000 / targetFPS;
+
+    // Throttled resize handler (200ms delay)
+    let resizeTimeout = null;
+    function throttledResize() {
+      if (resizeTimeout) return;
+      resizeTimeout = setTimeout(() => {
+        resizeCanvas();
+        resizeTimeout = null;
+      }, 200);
+    }
 
     function resizeCanvas() {
       const { innerWidth, innerHeight } = window;
@@ -161,7 +219,42 @@ try {
     }
 
     resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
+    window.addEventListener('resize', throttledResize);
+
+    // Intersection Observer to pause when off-screen
+    const heroSection = canvas.closest('section');
+    if (heroSection) {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            isVisible = entry.isIntersecting;
+            handleVisibilityChange();
+          });
+        },
+        { threshold: 0.1 }
+      );
+      observer.observe(heroSection);
+    }
+
+    // Page Visibility API to pause when tab is hidden
+    document.addEventListener('visibilitychange', () => {
+      isPageVisible = !document.hidden;
+      handleVisibilityChange();
+    });
+
+    function handleVisibilityChange() {
+      if (isVisible && isPageVisible) {
+        if (!animationId) {
+          lastFrameTime = performance.now();
+          animationId = requestAnimationFrame(animate);
+        }
+      } else {
+        if (animationId) {
+          cancelAnimationFrame(animationId);
+          animationId = null;
+        }
+      }
+    }
 
     // Mouse logic inspired by particles.tsx
     window.addEventListener('mousemove', (event) => {
@@ -407,17 +500,34 @@ try {
       });
     }
 
-    function animate() {
+    function animate(currentTime) {
+      animationId = requestAnimationFrame(animate);
+      
+      // Frame skipping when running slow (below 30fps)
+      const elapsed = currentTime - lastFrameTime;
+      if (elapsed < frameInterval) return;
+      
+      // Adjust for frame skipping - skip frames if running too slow
+      const fps = 1000 / elapsed;
+      frameCount++;
+      
+      // If FPS drops below 30, skip every other frame
+      if (fps < 30 && frameCount % 2 !== 0) {
+        lastFrameTime = currentTime;
+        return;
+      }
+      
+      lastFrameTime = currentTime - (elapsed % frameInterval);
+      
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       updateParticles();
       updateShootingStars();
       drawParticles();
       drawShootingStars();
-      requestAnimationFrame(animate);
     }
 
     initParticles();
-    animate();
+    animationId = requestAnimationFrame(animate);
   });
 
   // Artwork Modal Functionality
