@@ -211,6 +211,16 @@ const currentPath = Astro.url.pathname;
                 >
                     Portfolio
                 </a>
+                <a
+                    href="/flash-designs"
+                    class={`text-lg px-5 py-3 rounded-2xl transition-all font-semibold ${
+                        currentPath === "/flash-designs"
+                            ? "bg-white text-black shadow-sm"
+                            : "hover:bg-foreground/5"
+                    }`}
+                >
+                    Flash
+                </a>
                 <button
                     class="booking-trigger text-lg px-5 py-3 rounded-2xl transition-all font-semibold font-playfair hover:bg-foreground/5 text-left w-full"
                 >
